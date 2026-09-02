@@ -1,11 +1,17 @@
 package com.postpci.drrrp.data.sync
 
+import kotlinx.serialization.Serializable
 import retrofit2.http.Body
 import retrofit2.http.POST
 
 /** Wire request/response shapes for the two invite endpoints below. */
+@Serializable
 data class CreatePatientInviteRequest(val name: String)
+
+@Serializable
 data class CreateCaregiverInviteRequest(val name: String, val patientId: String)
+
+@Serializable
 data class InviteResponse(val patientId: String, val email: String, val temporaryPassword: String)
 
 /**

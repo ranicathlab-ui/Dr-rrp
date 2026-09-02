@@ -1,6 +1,7 @@
 package com.postpci.drrrp.data.auth
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.postpci.drrrp.data.model.UserRole
@@ -8,8 +9,12 @@ import com.postpci.drrrp.data.sync.CreateCaregiverInviteRequest
 import com.postpci.drrrp.data.sync.CreatePatientInviteRequest
 import com.postpci.drrrp.data.sync.InviteApiProvider
 import com.postpci.drrrp.data.sync.InviteApiService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 /**
@@ -48,13 +53,38 @@ class FirebaseAuthGateway(
     // isn't just SyncApiService plus two more methods (a circular-dependency issue).
     private val inviteApi: InviteApiService by lazy { InviteApiProvider.create(this) }
 
+    // For restoreSession() below — a one-off suspend round-trip on cold start, not tied to any
+    // screen's lifecycle.
+    private val restoreScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     init {
-        // Only ever clears state here: populating it needs the Firestore role doc, which is a
-        // suspend round-trip the (non-suspend) listener callback can't make. signIn and
-        // completeFirstLogin populate it explicitly once they have that doc in hand.
+        // Firebase Auth persists the session across process restarts/kills and restores
+        // auth.currentUser before this even runs — without this, a killed-and-relaunched app
+        // would show the login screen despite the user never having signed out. The listener
+        // below only ever clears state on an explicit sign-out; populating it from a *restored*
+        // session needs a suspend round-trip to Firestore for the role doc, which the listener
+        // callback (non-suspend) can't make — hence the separate one-shot restore here.
+        auth.currentUser?.let { restoreSession(it) }
+
         auth.addAuthStateListener { firebaseAuth ->
             if (firebaseAuth.currentUser == null) {
                 _currentUser.value = null
+            }
+        }
+    }
+
+    private fun restoreSession(firebaseUser: FirebaseUser) {
+        restoreScope.launch {
+            try {
+                val doc = firestore.collection(USERS_COLLECTION).document(firebaseUser.uid).get().await()
+                if (doc.exists() && doc.getBoolean(FIELD_MUST_CHANGE_PASSWORD) != true) {
+                    doc.toAuthUser(firebaseUser.uid, firebaseUser.email ?: "")?.let { _currentUser.value = it }
+                }
+                // If the doc is missing, incomplete, or mustChangePassword is still true, this
+                // silently leaves _currentUser null — the user just sees the login screen, same
+                // as if they'd never had a session. Nothing destructive either way.
+            } catch (e: Exception) {
+                // Offline on cold start, etc. — same fallback: login screen, try again later.
             }
         }
     }
