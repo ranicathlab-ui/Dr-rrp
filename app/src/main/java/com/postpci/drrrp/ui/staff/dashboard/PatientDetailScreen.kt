@@ -52,8 +52,14 @@ fun PatientDetailScreen(
     onEditBaseline: () -> Unit,
     onSendMessage: () -> Unit,
     onAddCaregiver: () -> Unit,
+    // Defaults to patientId for any other caller; StaffShell passes a fresh-per-visit UUID
+    // instead — see StaffScreen's doc for why that matters (no NavHost here to scope this
+    // automatically, so two different patients viewed in the same app session would otherwise
+    // share one cached ViewModel instance and show one patient's data on the other's screen).
+    viewModelKey: String = patientId,
 ) {
     val viewModel: PatientDetailViewModel = viewModel(
+        key = viewModelKey,
         factory = viewModelFactory { initializer { PatientDetailViewModel(application.database, application.syncManager, patientId) } },
     )
     val baseline by viewModel.baseline.collectAsState()

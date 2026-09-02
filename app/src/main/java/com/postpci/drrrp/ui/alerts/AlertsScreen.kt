@@ -48,6 +48,7 @@ private val dateTimeFormatter = DateTimeFormatter.ofPattern("d MMM, h:mm a")
 @Composable
 fun AlertsScreen(application: DrRrpApplication, patientId: String) {
     val viewModel: AlertsViewModel = viewModel(
+        key = patientId,
         factory = viewModelFactory {
             initializer { AlertsViewModel(application.patientCareRepository, patientId) }
         },

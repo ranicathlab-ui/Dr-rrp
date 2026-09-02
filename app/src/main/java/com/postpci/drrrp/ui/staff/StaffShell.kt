@@ -17,12 +17,21 @@ import com.postpci.drrrp.ui.staff.dashboard.StaffDashboardScreen
 import com.postpci.drrrp.ui.staff.wizard.BaselineWizardScreen
 import kotlinx.coroutines.launch
 
+/**
+ * Every parametrized screen carries an [instanceKey] the composable passes straight through as
+ * its `viewModel(key = ...)` — this shell has no NavHost, so there's no NavBackStackEntry to
+ * scope a fresh ViewModelStore per visit; without an explicit per-visit key, `viewModel()`
+ * caches by class name alone and would hand the *same* instance (and its patientId) to whichever
+ * patient's screen happens to be composed at that same StaffShell call site next, showing one
+ * patient's data on another's screen. Defaults to a fresh UUID, so simply constructing a new
+ * state (e.g. `StaffScreen.PatientDetail(id)`) always gets a clean instance.
+ */
 private sealed interface StaffScreen {
     data object Dashboard : StaffScreen
-    data class PatientDetail(val patientId: String) : StaffScreen
-    data class Wizard(val patientId: String?) : StaffScreen
-    data class Messaging(val patientId: String) : StaffScreen
-    data class AddCaregiver(val patientId: String) : StaffScreen
+    data class PatientDetail(val patientId: String, val instanceKey: String = java.util.UUID.randomUUID().toString()) : StaffScreen
+    data class Wizard(val patientId: String?, val instanceKey: String = java.util.UUID.randomUUID().toString()) : StaffScreen
+    data class Messaging(val patientId: String, val instanceKey: String = java.util.UUID.randomUUID().toString()) : StaffScreen
+    data class AddCaregiver(val patientId: String, val instanceKey: String = java.util.UUID.randomUUID().toString()) : StaffScreen
 }
 
 /** Simple in-shell navigation (no NavHost) across the staff-only screens for this stage. */
@@ -55,6 +64,7 @@ fun StaffShell(application: DrRrpApplication) {
         is StaffScreen.PatientDetail -> PatientDetailScreen(
             application = application,
             patientId = s.patientId,
+            viewModelKey = s.instanceKey,
             onBack = { screen = StaffScreen.Dashboard },
             onEditBaseline = { screen = StaffScreen.Wizard(s.patientId) },
             onSendMessage = { screen = StaffScreen.Messaging(s.patientId) },
@@ -63,12 +73,14 @@ fun StaffShell(application: DrRrpApplication) {
         is StaffScreen.Wizard -> BaselineWizardScreen(
             application = application,
             patientId = s.patientId,
+            viewModelKey = s.instanceKey,
             onBack = { screen = s.patientId?.let { StaffScreen.PatientDetail(it) } ?: StaffScreen.Dashboard },
             onComplete = { newId -> screen = StaffScreen.PatientDetail(newId) },
         )
         is StaffScreen.Messaging -> MessagingScreen(
             application = application,
             patientId = s.patientId,
+            viewModelKey = s.instanceKey,
             currentUserRole = UserRole.STAFF,
             currentUserId = currentUser?.uid.orEmpty(),
             currentUserName = currentUser?.displayName ?: "Clinic Staff",
@@ -77,6 +89,7 @@ fun StaffShell(application: DrRrpApplication) {
         is StaffScreen.AddCaregiver -> AddCaregiverScreen(
             application = application,
             patientId = s.patientId,
+            viewModelKey = s.instanceKey,
             onBack = { screen = StaffScreen.PatientDetail(s.patientId) },
             onDone = { screen = StaffScreen.PatientDetail(s.patientId) },
         )

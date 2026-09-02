@@ -61,8 +61,14 @@ fun MessagingScreen(
     currentUserId: String,
     currentUserName: String,
     onBack: () -> Unit,
+    // Defaults to patientId (fine for PatientCaregiverShell — one fixed patient all session).
+    // StaffShell passes a fresh-per-visit UUID instead, since it opens this screen for whichever
+    // patient staff is currently viewing and has no NavHost to scope a fresh ViewModel per visit
+    // automatically — see StaffScreen's doc.
+    viewModelKey: String = patientId,
 ) {
     val viewModel: MessagingViewModel = viewModel(
+        key = viewModelKey,
         factory = viewModelFactory {
             initializer { MessagingViewModel(application.messagingRepository, application.syncManager, patientId, currentUserRole, currentUserId, currentUserName) }
         },

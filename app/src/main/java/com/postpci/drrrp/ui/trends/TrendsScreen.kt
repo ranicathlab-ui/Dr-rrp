@@ -36,6 +36,7 @@ private data class TrendCard(val title: String, val series: List<ChartSeries>, v
 @Composable
 fun TrendsScreen(application: DrRrpApplication, patientId: String) {
     val viewModel: TrendsViewModel = viewModel(
+        key = patientId,
         factory = viewModelFactory { initializer { TrendsViewModel(application.database, patientId) } },
     )
     val state by viewModel.uiState.collectAsState()

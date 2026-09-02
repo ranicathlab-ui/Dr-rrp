@@ -43,8 +43,20 @@ import com.postpci.drrrp.ui.theme.TextSecondary
  * and its credentials are shown once so staff can hand them to the patient.
  */
 @Composable
-fun BaselineWizardScreen(application: DrRrpApplication, patientId: String?, onBack: () -> Unit, onComplete: (String) -> Unit) {
+fun BaselineWizardScreen(
+    application: DrRrpApplication,
+    patientId: String?,
+    onBack: () -> Unit,
+    onComplete: (String) -> Unit,
+    // Defaults to patientId, but that's null for every "new patient" wizard — every such
+    // instance would otherwise share the one cached ViewModel (no NavHost to scope this
+    // automatically), so a second "Add new patient" mid-session would silently resume the
+    // *first* patient's in-progress draft instead of starting fresh. StaffShell passes a
+    // fresh-per-visit UUID instead; see StaffScreen's doc.
+    viewModelKey: String = patientId ?: "new-patient",
+) {
     val viewModel: BaselineWizardViewModel = viewModel(
+        key = viewModelKey,
         factory = viewModelFactory {
             initializer {
                 BaselineWizardViewModel(application.database, application.authGateway, patientId) {

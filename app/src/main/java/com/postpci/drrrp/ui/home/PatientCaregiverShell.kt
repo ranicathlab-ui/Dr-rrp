@@ -65,6 +65,7 @@ fun PatientCaregiverShell(
     val currentUser by application.authGateway.currentUser.collectAsState()
 
     val emergencyGate: EmergencyGateViewModel = viewModel(
+        key = patientId,
         factory = viewModelFactory {
             initializer { EmergencyGateViewModel(application.patientCareRepository, patientId) }
         },

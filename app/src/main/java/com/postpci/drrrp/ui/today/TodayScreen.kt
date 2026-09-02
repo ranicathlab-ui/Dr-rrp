@@ -78,6 +78,7 @@ fun TodayScreen(
     onOpenMessages: () -> Unit = {},
 ) {
     val viewModel: TodayViewModel = viewModel(
+        key = patientId,
         factory = viewModelFactory {
             initializer { TodayViewModel(application.database, application.patientCareRepository, application.syncManager, patientId, loggedByCaregiver) }
         },

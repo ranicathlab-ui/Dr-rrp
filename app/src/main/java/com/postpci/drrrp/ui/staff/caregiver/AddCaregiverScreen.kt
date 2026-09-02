@@ -40,8 +40,13 @@ fun AddCaregiverScreen(
     patientId: String,
     onBack: () -> Unit,
     onDone: () -> Unit,
+    // Defaults to patientId; StaffShell passes a fresh-per-visit UUID instead so adding a
+    // caregiver for one patient, then another, never reuses a stale ViewModel still holding the
+    // first patient's id — see StaffScreen's doc.
+    viewModelKey: String = patientId,
 ) {
     val viewModel: AddCaregiverViewModel = viewModel(
+        key = viewModelKey,
         factory = viewModelFactory { initializer { AddCaregiverViewModel(application.authGateway, patientId) } },
     )
 
