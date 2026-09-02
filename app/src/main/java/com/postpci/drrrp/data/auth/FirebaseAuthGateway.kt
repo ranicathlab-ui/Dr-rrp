@@ -143,22 +143,38 @@ class FirebaseAuthGateway(
 
     // contact isn't sent to the backend today — there's no SMS/notification channel yet to use
     // it for, same as FakeAuthGateway. It stays in the interface for when that lands.
-    override suspend fun createPatientInvite(name: String, contact: String): InviteCredentials {
+    override suspend fun createPatientInvite(name: String, contact: String, email: String?): InviteCredentials {
         val response = try {
-            inviteApi.createPatientInvite(CreatePatientInviteRequest(name))
+            inviteApi.createPatientInvite(CreatePatientInviteRequest(name, email?.ifBlank { null }))
         } catch (e: Exception) {
             throw IllegalStateException("createPatientInvite failed: ${e.message}", e)
         }
-        return InviteCredentials(response.patientId, response.email, response.temporaryPassword)
+        val emailSent = trySendPasswordResetEmail(email)
+        return InviteCredentials(response.patientId, response.email, response.temporaryPassword, emailSent)
     }
 
-    override suspend fun createCaregiverInvite(name: String, contact: String, patientId: String): InviteCredentials {
+    override suspend fun createCaregiverInvite(name: String, contact: String, patientId: String, email: String?): InviteCredentials {
         val response = try {
-            inviteApi.createCaregiverInvite(CreateCaregiverInviteRequest(name, patientId, contact.ifBlank { null }))
+            inviteApi.createCaregiverInvite(CreateCaregiverInviteRequest(name, patientId, contact.ifBlank { null }, email?.ifBlank { null }))
         } catch (e: Exception) {
             throw IllegalStateException("createCaregiverInvite failed: ${e.message}", e)
         }
-        return InviteCredentials(response.patientId, response.email, response.temporaryPassword)
+        val emailSent = trySendPasswordResetEmail(email)
+        return InviteCredentials(response.patientId, response.email, response.temporaryPassword, emailSent)
+    }
+
+    /** Best-effort: a failed reset email never fails the invite itself — the on-screen temporary
+     *  password is always shown as a fallback (see InviteCredentials' doc). Uses the client SDK's
+     *  own "forgot password" mechanism against the just-created Firebase Auth account, which is
+     *  a free, built-in Firebase feature — no third-party email/SMS service involved. */
+    private suspend fun trySendPasswordResetEmail(email: String?): Boolean {
+        if (email.isNullOrBlank()) return false
+        return try {
+            auth.sendPasswordResetEmail(email).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     override suspend fun getIdToken(): String? =

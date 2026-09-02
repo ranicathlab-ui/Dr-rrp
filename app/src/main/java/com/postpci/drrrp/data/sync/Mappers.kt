@@ -72,7 +72,7 @@ fun PatientBaselineEntity.toDto() = BaselineDto(
     patientId = patientId,
     demographics = DemographicsDto(
         name = demographics.name, age = demographics.age, sex = demographics.sex?.name,
-        contactNumber = demographics.contactNumber, comorbidities = demographics.comorbidities,
+        contactNumber = demographics.contactNumber, email = demographics.email, comorbidities = demographics.comorbidities,
         currentMedications = demographics.currentMedications,
     ),
     procedural = ProceduralDto(
@@ -151,7 +151,7 @@ fun BaselineDto.toEntity() = PatientBaselineEntity(
     patientId = patientId,
     demographics = Demographics(
         name = demographics.name, age = demographics.age, sex = demographics.sex.toEnumOrNull<Sex>(),
-        contactNumber = demographics.contactNumber, comorbidities = demographics.comorbidities,
+        contactNumber = demographics.contactNumber, email = demographics.email, comorbidities = demographics.comorbidities,
         currentMedications = demographics.currentMedications,
     ),
     procedural = ProceduralDetails(

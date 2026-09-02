@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -54,7 +56,7 @@ fun AddCaregiverScreen(
         Column(modifier = modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
             val credentials = viewModel.inviteCredentials
             if (credentials != null) {
-                CaregiverInviteCredentialsCard(email = credentials.email, tempPassword = credentials.temporaryPassword)
+                CaregiverInviteCredentialsCard(email = credentials.email, tempPassword = credentials.temporaryPassword, emailSent = credentials.emailSent)
                 Button(
                     onClick = onDone,
                     colors = ButtonDefaults.buttonColors(containerColor = AccentYellowGold, contentColor = Color(0xFF241A00)),
@@ -79,6 +81,16 @@ fun AddCaregiverScreen(
                 colors = drrrpFieldColors(),
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             )
+            OutlinedTextField(
+                value = viewModel.email,
+                onValueChange = viewModel::onEmailChange,
+                label = { Text("Email (optional)") },
+                placeholder = { Text("Leave blank if the caregiver has no email") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                colors = drrrpFieldColors(),
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            )
             viewModel.errorMessage?.let {
                 Text(it, color = AlertRed, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
             }
@@ -93,7 +105,7 @@ fun AddCaregiverScreen(
 }
 
 @Composable
-private fun CaregiverInviteCredentialsCard(email: String, tempPassword: String) {
+private fun CaregiverInviteCredentialsCard(email: String, tempPassword: String, emailSent: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -104,7 +116,12 @@ private fun CaregiverInviteCredentialsCard(email: String, tempPassword: String) 
     ) {
         Text("Caregiver invite created", color = AccentYellowGold, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Text(
-            "Share these with the caregiver — they'll set their own password on first login.",
+            if (emailSent) {
+                "A password-setup email was sent to $email — the caregiver can use that link directly. " +
+                    "The temporary password below is a fallback if the email doesn't arrive."
+            } else {
+                "Share these with the caregiver — they'll set their own password on first login."
+            },
             color = TextSecondary,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),

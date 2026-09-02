@@ -38,5 +38,10 @@ sealed interface AuthOpResult {
  * Credentials staff hand to a new patient/caregiver to complete their first login, plus the
  * [patientId] (the auth uid) staff need immediately to link a local record — e.g. save the
  * baseline wizard's draft — without a separate lookup round-trip.
+ *
+ * [emailSent] is true when [email] is the patient/caregiver's own real address and a Firebase
+ * password-reset email was successfully sent to it — the on-screen [temporaryPassword] is then
+ * just a fallback (e.g. the email lands in spam), not the primary path. False for a synthetic
+ * `@invite.drrrp.test` address, where staff must relay the temporary password directly.
  */
-data class InviteCredentials(val patientId: String, val email: String, val temporaryPassword: String)
+data class InviteCredentials(val patientId: String, val email: String, val temporaryPassword: String, val emailSent: Boolean = false)

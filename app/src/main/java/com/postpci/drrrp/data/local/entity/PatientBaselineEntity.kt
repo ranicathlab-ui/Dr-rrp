@@ -44,6 +44,12 @@ data class Demographics(
     val age: Int? = null,
     val sex: Sex? = null,
     val contactNumber: String = "",
+    /** Optional — when set, the patient logs in with this real address instead of a synthetic
+     *  one, and gets a Firebase password-reset email sent to it right after the invite is
+     *  created (see FirebaseAuthGateway.createPatientInvite). Left blank, invite creation falls
+     *  back to the synthetic-email + on-screen temporary password flow, for patients without
+     *  email access. */
+    val email: String = "",
     /** Freeform, staff-entered semicolon-separated list. */
     val comorbidities: String = "",
     /** Home medications prior to PCI — distinct from the discharge regimen below. */

@@ -90,33 +90,33 @@ class FakeAuthGateway : AuthGateway {
         _currentUser.value = null
     }
 
-    override suspend fun createPatientInvite(name: String, contact: String): InviteCredentials {
-        val email = syntheticEmail(name)
+    override suspend fun createPatientInvite(name: String, contact: String, email: String?): InviteCredentials {
+        val resolvedEmail = email?.ifBlank { null } ?: syntheticEmail(name)
         val tempPassword = generateTempPassword()
         val uid = UUID.randomUUID().toString()
-        accounts[email] = FakeAccount(
+        accounts[resolvedEmail] = FakeAccount(
             uid = uid,
-            email = email,
+            email = resolvedEmail,
             password = null,
             displayName = name,
             role = UserRole.PATIENT,
         )
-        return InviteCredentials(uid, email, tempPassword)
+        return InviteCredentials(uid, resolvedEmail, tempPassword, emailSent = !email.isNullOrBlank())
     }
 
-    override suspend fun createCaregiverInvite(name: String, contact: String, patientId: String): InviteCredentials {
-        val email = syntheticEmail(name)
+    override suspend fun createCaregiverInvite(name: String, contact: String, patientId: String, email: String?): InviteCredentials {
+        val resolvedEmail = email?.ifBlank { null } ?: syntheticEmail(name)
         val tempPassword = generateTempPassword()
         val uid = UUID.randomUUID().toString()
-        accounts[email] = FakeAccount(
+        accounts[resolvedEmail] = FakeAccount(
             uid = uid,
-            email = email,
+            email = resolvedEmail,
             password = null,
             displayName = name,
             role = UserRole.CAREGIVER,
             linkedPatientId = patientId,
         )
-        return InviteCredentials(uid, email, tempPassword)
+        return InviteCredentials(uid, resolvedEmail, tempPassword, emailSent = !email.isNullOrBlank())
     }
 
     override suspend fun getIdToken(): String? = currentUser.value?.let { "fake-id-token-${it.uid}" }

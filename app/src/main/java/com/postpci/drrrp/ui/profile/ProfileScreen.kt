@@ -226,6 +226,7 @@ private fun DemographicsRows(b: PatientBaselineEntity) {
     InfoRow("Age", d.age?.toString())
     InfoRow("Sex", d.sex?.name)
     InfoRow("Contact number", d.contactNumber)
+    InfoRow("Email", d.email)
     InfoRow("Comorbidities", d.comorbidities)
     InfoRow("Current medications", d.currentMedications)
 }

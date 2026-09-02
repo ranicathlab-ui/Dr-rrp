@@ -90,7 +90,7 @@ fun BaselineWizardScreen(
             item {
                 StepProgress(currentStep = viewModel.currentStep)
                 if (credentials != null && viewModel.currentStep == 1) {
-                    InviteCredentialsCard(email = credentials.email, tempPassword = credentials.temporaryPassword)
+                    InviteCredentialsCard(email = credentials.email, tempPassword = credentials.temporaryPassword, emailSent = credentials.emailSent)
                 }
                 when (viewModel.currentStep) {
                     0 -> DemographicsStep(viewModel.draft.demographics, false, {}) {
@@ -141,7 +141,7 @@ private fun StepProgress(currentStep: Int) {
 }
 
 @Composable
-private fun InviteCredentialsCard(email: String, tempPassword: String) {
+private fun InviteCredentialsCard(email: String, tempPassword: String, emailSent: Boolean) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -152,7 +152,12 @@ private fun InviteCredentialsCard(email: String, tempPassword: String) {
     ) {
         Text("Patient invite created", color = AccentYellowGold, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Text(
-            "Share these with the patient — they'll set their own password on first login.",
+            if (emailSent) {
+                "A password-setup email was sent to $email — the patient can use that link directly. " +
+                    "The temporary password below is a fallback if the email doesn't arrive."
+            } else {
+                "Share these with the patient — they'll set their own password on first login."
+            },
             color = TextSecondary,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),

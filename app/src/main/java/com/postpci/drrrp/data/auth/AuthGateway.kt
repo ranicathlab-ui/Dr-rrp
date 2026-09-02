@@ -22,11 +22,16 @@ interface AuthGateway {
 
     suspend fun signOut()
 
-    /** Staff-only: creates a patient record's login and returns the invite to hand over. */
-    suspend fun createPatientInvite(name: String, contact: String): InviteCredentials
+    /** Staff-only: creates a patient record's login and returns the invite to hand over. When
+     *  [email] is a real address (not blank), the patient logs in with it directly and gets a
+     *  Firebase password-reset email sent to it — see [InviteCredentials.emailSent]. Left blank,
+     *  falls back to a synthetic login address and the returned temporary password, for patients
+     *  without email access. */
+    suspend fun createPatientInvite(name: String, contact: String, email: String? = null): InviteCredentials
 
-    /** Staff-only: links a caregiver invite to an existing patient. */
-    suspend fun createCaregiverInvite(name: String, contact: String, patientId: String): InviteCredentials
+    /** Staff-only: links a caregiver invite to an existing patient. Same [email] behavior as
+     *  [createPatientInvite]. */
+    suspend fun createCaregiverInvite(name: String, contact: String, patientId: String, email: String? = null): InviteCredentials
 
     /**
      * The token the REST backend verifies on every call (see the sync layer's `AuthInterceptor`).

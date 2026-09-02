@@ -18,6 +18,10 @@ class AddCaregiverViewModel(
         private set
     var contact by mutableStateOf("")
         private set
+    /** Optional — see AuthGateway.createCaregiverInvite's doc for the real-vs-synthetic-email
+     *  behavior this drives. */
+    var email by mutableStateOf("")
+        private set
     var isSaving by mutableStateOf(false)
         private set
     var errorMessage by mutableStateOf<String?>(null)
@@ -33,6 +37,10 @@ class AddCaregiverViewModel(
         contact = value
     }
 
+    fun onEmailChange(value: String) {
+        email = value
+    }
+
     fun createInvite() {
         if (name.isBlank()) {
             errorMessage = "Enter the caregiver's name."
@@ -42,7 +50,7 @@ class AddCaregiverViewModel(
             isSaving = true
             errorMessage = null
             try {
-                inviteCredentials = authGateway.createCaregiverInvite(name.trim(), contact.trim(), patientId)
+                inviteCredentials = authGateway.createCaregiverInvite(name.trim(), contact.trim(), patientId, email.trim())
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Could not create the caregiver invite."
             } finally {

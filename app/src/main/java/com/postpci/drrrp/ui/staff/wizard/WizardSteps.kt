@@ -37,6 +37,7 @@ fun DemographicsStep(initial: Demographics, showBack: Boolean, onBack: () -> Uni
     var age by remember { mutableStateOf(initial.age?.toString().orEmpty()) }
     var sex by remember { mutableStateOf(initial.sex) }
     var contact by remember { mutableStateOf(initial.contactNumber) }
+    var email by remember { mutableStateOf(initial.email) }
     var comorbidities by remember { mutableStateOf(initial.comorbidities) }
     var currentMeds by remember { mutableStateOf(initial.currentMedications) }
 
@@ -45,10 +46,11 @@ fun DemographicsStep(initial: Demographics, showBack: Boolean, onBack: () -> Uni
         FormNumberField("Age", age) { age = it }
         FormChipGroup("Sex", Sex.entries, sex, { it.name }) { sex = it }
         FormTextField("Contact number", contact) { contact = it }
+        FormTextField("Email (optional — leave blank if the patient has no email)", email) { email = it }
         FormTextField("Comorbidities (semicolon-separated)", comorbidities) { comorbidities = it }
         FormTextField("Current medications (pre-PCI, semicolon-separated)", currentMeds) { currentMeds = it }
         WizardNavButtons(showBack, "Next: Procedural", onBack) {
-            onNext(Demographics(name, age.toIntOrNull(), sex, contact, comorbidities, currentMeds))
+            onNext(Demographics(name, age.toIntOrNull(), sex, contact, email, comorbidities, currentMeds))
         }
     }
 }

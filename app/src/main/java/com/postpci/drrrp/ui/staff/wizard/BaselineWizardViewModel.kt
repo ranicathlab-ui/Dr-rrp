@@ -76,7 +76,7 @@ class BaselineWizardViewModel(
         viewModelScope.launch {
             isSaving = true
             val id = patientId ?: run {
-                val creds = authGateway.createPatientInvite(draft.demographics.name, draft.demographics.contactNumber)
+                val creds = authGateway.createPatientInvite(draft.demographics.name, draft.demographics.contactNumber, draft.demographics.email)
                 inviteCredentials = creds
                 patientId = creds.patientId
                 creds.patientId

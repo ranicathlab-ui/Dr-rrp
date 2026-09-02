@@ -65,6 +65,39 @@ function syntheticEmail(name) {
   return `${slug || "invite"}.${suffix}@${INVITE_EMAIL_DOMAIN}`;
 }
 
+// Deliberately loose — this only guards against obvious typos before spending a Firebase Auth
+// call on it; Firebase itself does the real validation and is the source of truth.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Creates the Firebase Auth user for an invite, using [rawEmail] as the real login address when
+ *  it's a plausible email, falling back to a synthetic `@invite.drrrp.test` one otherwise (see
+ *  Demographics.email's doc for why that's a deliberate, not an error, path). Surfaces Firebase's
+ *  own "that email is already registered" error as a clean 409 instead of the generic 500 the
+ *  route would otherwise fall through to. */
+async function createInviteUser(res, rawEmail, name, temporaryPassword) {
+  const trimmed = (rawEmail || "").trim();
+  const usingRealEmail = trimmed.length > 0;
+  if (usingRealEmail && !EMAIL_PATTERN.test(trimmed)) {
+    res.status(400).json({ error: "That doesn't look like a valid email address." });
+    return null;
+  }
+  const email = usingRealEmail ? trimmed : syntheticEmail(name);
+  try {
+    const userRecord = await getAuth().createUser({ email, password: temporaryPassword, displayName: name });
+    return { userRecord, email };
+  } catch (e) {
+    if (e?.code === "auth/email-already-exists") {
+      res.status(409).json({ error: `${email} is already registered — use a different email, or leave it blank.` });
+      return null;
+    }
+    if (e?.code === "auth/invalid-email") {
+      res.status(400).json({ error: "That doesn't look like a valid email address." });
+      return null;
+    }
+    throw e;
+  }
+}
+
 // Wraps an async route handler so a rejected promise reaches Express's error-handling middleware
 // (below) instead of becoming an unhandled rejection. Express 4 does NOT do this automatically for
 // async handlers — every route in this file used to be one uncaught Firestore/Auth error away from
@@ -128,9 +161,10 @@ app.post("/invite/patient", asyncHandler(async (req, res) => {
   const name = (req.body?.name || "").trim();
   if (!name) return res.status(400).json({ error: "name is required." });
 
-  const email = syntheticEmail(name);
   const temporaryPassword = generateTempPassword();
-  const userRecord = await getAuth().createUser({ email, password: temporaryPassword, displayName: name });
+  const created = await createInviteUser(res, req.body?.email, name, temporaryPassword);
+  if (!created) return; // createInviteUser already sent the error response
+  const { userRecord, email } = created;
 
   await getFirestore().collection(USERS_COLLECTION).doc(userRecord.uid).set({
     role: "PATIENT",
@@ -151,9 +185,10 @@ app.post("/invite/caregiver", asyncHandler(async (req, res) => {
   if (!name) return res.status(400).json({ error: "name is required." });
   if (!linkedPatientId) return res.status(400).json({ error: "patientId is required." });
 
-  const email = syntheticEmail(name);
   const temporaryPassword = generateTempPassword();
-  const userRecord = await getAuth().createUser({ email, password: temporaryPassword, displayName: name });
+  const created = await createInviteUser(res, req.body?.email, name, temporaryPassword);
+  if (!created) return; // createInviteUser already sent the error response
+  const { userRecord, email } = created;
 
   await getFirestore().collection(USERS_COLLECTION).doc(userRecord.uid).set({
     role: "CAREGIVER",

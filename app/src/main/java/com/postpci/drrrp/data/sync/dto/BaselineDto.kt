@@ -22,6 +22,7 @@ data class DemographicsDto(
     val age: Int? = null,
     val sex: String? = null,
     val contactNumber: String,
+    val email: String = "",
     val comorbidities: String = "",
     val currentMedications: String = "",
 )
