@@ -9,6 +9,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 import com.postpci.drrrp.data.auth.AuthGateway
 import com.postpci.drrrp.data.auth.FirebaseAuthGateway
 import com.postpci.drrrp.data.local.DrRrpDatabase
+import com.postpci.drrrp.data.onboarding.DisclaimerPreferences
 import com.postpci.drrrp.data.repository.MessagingRepository
 import com.postpci.drrrp.data.repository.PatientCareRepository
 import com.postpci.drrrp.data.sync.DrRrpMessagingService
@@ -36,6 +37,7 @@ import kotlinx.coroutines.tasks.await
 class DrRrpApplication : Application(), Configuration.Provider {
     val database: DrRrpDatabase by lazy { DrRrpDatabase.build(this) }
     val authGateway: AuthGateway by lazy { FirebaseAuthGateway() }
+    val disclaimerPreferences: DisclaimerPreferences by lazy { DisclaimerPreferences(this) }
     private fun onLocalWrite() = SyncScheduler.requestImmediateSync(this)
 
     // Process-lifetime scope for FCM token registration — this is a background maintenance task

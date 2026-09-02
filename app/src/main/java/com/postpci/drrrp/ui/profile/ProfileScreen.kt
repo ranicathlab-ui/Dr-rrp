@@ -14,14 +14,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.postpci.drrrp.DrRrpApplication
 import com.postpci.drrrp.data.alert.ClinicContact
+import com.postpci.drrrp.data.alert.LegalLinks
 import com.postpci.drrrp.data.local.entity.PatientBaselineEntity
 import com.postpci.drrrp.ui.common.DrRrpScaffold
 import com.postpci.drrrp.ui.theme.AccentYellowGold
@@ -38,6 +46,7 @@ import com.postpci.drrrp.ui.theme.BorderHairline
 import com.postpci.drrrp.ui.theme.SurfaceCard
 import com.postpci.drrrp.ui.theme.TextPrimary
 import com.postpci.drrrp.ui.theme.TextSecondary
+import kotlinx.coroutines.launch
 
 /**
  * Read-only baseline view for patients/caregivers — editing is staff-only (see the Stage 6
@@ -68,7 +77,100 @@ fun ProfileScreen(application: DrRrpApplication, patientId: String) {
             item { SectionCard("Labs & vitals at discharge") { LabsRows(b) } }
             item { SectionCard("Medications & follow-up") { MedsRows(b) } }
             item { SectionCard("Social") { SocialRows(b) } }
+            item { LegalAndDataSection(application, patientId) }
         }
+    }
+}
+
+/** Privacy Policy / Terms & Conditions links plus the account & data deletion request required by
+ * Google Play's Data Safety section — see LegalLinks' doc for why these are hosted pages rather
+ * than in-app text. */
+@Composable
+private fun LegalAndDataSection(application: DrRrpApplication, patientId: String) {
+    val context = LocalContext.current
+    val currentUser by application.authGateway.currentUser.collectAsState()
+    val scope = rememberCoroutineScope()
+    var showConfirmDialog by remember { mutableStateOf(false) }
+    var requestSent by remember { mutableStateOf(false) }
+
+    SectionCard("Legal") {
+        TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(LegalLinks.PRIVACY_POLICY_URL))) }) {
+            Text("Privacy Policy", color = AccentYellowGold)
+        }
+        TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(LegalLinks.TERMS_URL))) }) {
+            Text("Terms & Conditions", color = AccentYellowGold)
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp)
+            .background(SurfaceCard, RoundedCornerShape(16.dp))
+            .border(1.dp, BorderHairline, RoundedCornerShape(16.dp))
+            .padding(16.dp),
+    ) {
+        Text("Your data", color = AccentYellowGold, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(
+            "You can request complete deletion of your account and health data at any time.",
+            color = TextSecondary,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+        )
+        if (requestSent) {
+            Text(
+                "Request sent — the clinic will process this within a few days. You can also call them directly.",
+                color = AccentYellowGold,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        } else {
+            OutlinedButton(
+                onClick = { showConfirmDialog = true },
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AlertRed),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AlertRed),
+            ) { Text("Request account & data deletion") }
+        }
+    }
+
+    if (showConfirmDialog) {
+        val user = currentUser
+        AlertDialog(
+            onDismissRequest = { showConfirmDialog = false },
+            title = { Text("Delete your account and data?") },
+            text = {
+                Text(
+                    "This sends a request to Aasai Health Centre to permanently delete your DR RRP " +
+                        "account and all your logged health data. This can take a few days to process " +
+                        "— you'll be contacted once it's done. You can also call the clinic directly " +
+                        "instead of using this button.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showConfirmDialog = false
+                    if (user != null) {
+                        scope.launch {
+                            try {
+                                application.messagingRepository.send(
+                                    patientId,
+                                    user.role,
+                                    user.uid,
+                                    user.displayName,
+                                    "ACCOUNT DELETION REQUEST — this patient has requested complete deletion of their account and health data, per the app's Privacy Policy.",
+                                )
+                                requestSent = true
+                            } catch (e: Exception) {
+                                // Best-effort — if this fails to send, the confirmation dialog's own
+                                // text already told the user they can call the clinic directly instead.
+                            }
+                        }
+                    }
+                }) { Text("Send request", color = AlertRed) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConfirmDialog = false }) { Text("Cancel") }
+            },
+        )
     }
 }
 

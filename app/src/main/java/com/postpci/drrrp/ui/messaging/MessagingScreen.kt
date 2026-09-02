@@ -34,6 +34,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.postpci.drrrp.DrRrpApplication
+import com.postpci.drrrp.data.alert.ClinicContact
 import com.postpci.drrrp.data.local.entity.MessageEntity
 import com.postpci.drrrp.data.model.UserRole
 import com.postpci.drrrp.ui.common.DrRrpScaffold
@@ -98,6 +99,18 @@ fun MessagingScreen(
                         MessageBubble(message, isMine = message.senderRole == currentUserRole && message.senderId == currentUserId)
                     }
                 }
+            }
+
+            // Sets expectations so patients don't treat this thread as an emergency line — see
+            // the Terms & Conditions' "Doctor response time" section for the same commitment.
+            if (currentUserRole != UserRole.STAFF) {
+                Text(
+                    "Typical clinic response: 4–12 hours during working hours. For emergencies, " +
+                        "${ClinicContact.CONTACT_LABEL} directly — don't wait for a reply here.",
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp),
+                )
             }
 
             Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {

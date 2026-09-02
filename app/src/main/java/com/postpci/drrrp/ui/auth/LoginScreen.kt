@@ -1,12 +1,9 @@
 package com.postpci.drrrp.ui.auth
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -26,11 +23,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.postpci.drrrp.DrRrpApplication
-import com.postpci.drrrp.data.auth.FakeAuthGateway
 import com.postpci.drrrp.ui.theme.AccentYellowGold
 import com.postpci.drrrp.ui.theme.AlertRed
 import com.postpci.drrrp.ui.theme.BorderHairline
-import com.postpci.drrrp.ui.theme.SurfaceCard
 import com.postpci.drrrp.ui.theme.TextPrimary
 import com.postpci.drrrp.ui.theme.TextSecondary
 import com.postpci.drrrp.ui.theme.appBackground
@@ -81,10 +76,6 @@ fun LoginScreen(application: DrRrpApplication, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 12.dp),
             )
-        }
-
-        if (state.mode == LoginMode.SIGN_IN) {
-            DemoCredentialsHint()
         }
     }
 }
@@ -179,36 +170,6 @@ private fun FirstLoginSetupForm(
     }
     TextButton(onClick = viewModel::backToSignIn, modifier = Modifier.padding(top = 4.dp)) {
         Text("Back to sign in", color = TextSecondary)
-    }
-}
-
-@Composable
-private fun DemoCredentialsHint() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 28.dp)
-            .background(SurfaceCard, RoundedCornerShape(16.dp))
-            .border(1.dp, BorderHairline, RoundedCornerShape(16.dp))
-            .padding(16.dp),
-    ) {
-        Text("Demo credentials (stub auth — no Firebase yet)", style = MaterialTheme.typography.labelLarge, color = AccentYellowGold)
-        Text(
-            "Staff: ${FakeAuthGateway.DEMO_STAFF_EMAIL} / ${FakeAuthGateway.DEMO_STAFF_PASSWORD}",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        Text(
-            "Patient invite: ${FakeAuthGateway.DEMO_PATIENT_EMAIL} (any password — first login)",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
-        )
-        Text(
-            "Caregiver invite: ${FakeAuthGateway.DEMO_CAREGIVER_EMAIL} (any password — first login)",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
-        )
     }
 }
 
