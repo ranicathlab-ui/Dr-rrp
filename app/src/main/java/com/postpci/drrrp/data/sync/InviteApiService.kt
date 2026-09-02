@@ -9,7 +9,7 @@ import retrofit2.http.POST
 data class CreatePatientInviteRequest(val name: String)
 
 @Serializable
-data class CreateCaregiverInviteRequest(val name: String, val patientId: String)
+data class CreateCaregiverInviteRequest(val name: String, val patientId: String, val contactNumber: String? = null)
 
 @Serializable
 data class InviteResponse(val patientId: String, val email: String, val temporaryPassword: String)

@@ -134,6 +134,7 @@ app.post("/invite/caregiver", async (req, res) => {
   if (req.role !== "STAFF") return res.status(403).json({ error: "Only staff can create invites." });
   const name = (req.body?.name || "").trim();
   const linkedPatientId = (req.body?.patientId || "").trim();
+  const contactNumber = (req.body?.contactNumber || "").trim() || null;
   if (!name) return res.status(400).json({ error: "name is required." });
   if (!linkedPatientId) return res.status(400).json({ error: "patientId is required." });
 
@@ -144,6 +145,7 @@ app.post("/invite/caregiver", async (req, res) => {
   await getFirestore().collection(USERS_COLLECTION).doc(userRecord.uid).set({
     role: "CAREGIVER",
     displayName: name,
+    contactNumber,
     mustChangePassword: true,
     linkedPatientId,
     createdAt: new Date().toISOString(),

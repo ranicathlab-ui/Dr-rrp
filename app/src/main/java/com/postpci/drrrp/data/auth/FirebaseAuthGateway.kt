@@ -154,7 +154,7 @@ class FirebaseAuthGateway(
 
     override suspend fun createCaregiverInvite(name: String, contact: String, patientId: String): InviteCredentials {
         val response = try {
-            inviteApi.createCaregiverInvite(CreateCaregiverInviteRequest(name, patientId))
+            inviteApi.createCaregiverInvite(CreateCaregiverInviteRequest(name, patientId, contact.ifBlank { null }))
         } catch (e: Exception) {
             throw IllegalStateException("createCaregiverInvite failed: ${e.message}", e)
         }
