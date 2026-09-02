@@ -60,7 +60,9 @@ fun PatientDetailScreen(
 ) {
     val viewModel: PatientDetailViewModel = viewModel(
         key = viewModelKey,
-        factory = viewModelFactory { initializer { PatientDetailViewModel(application.database, application.syncManager, patientId) } },
+        factory = viewModelFactory {
+            initializer { PatientDetailViewModel(application.database, application.syncManager, application.syncApiService, patientId) }
+        },
     )
     val baseline by viewModel.baseline.collectAsState()
     val context = LocalContext.current
@@ -112,7 +114,13 @@ fun PatientDetailScreen(
                         Text("Add caregiver", color = TextPrimary)
                     }
                 }
+            }
 
+            if (viewModel.caregivers.isNotEmpty()) {
+                item { CaregiversCard(viewModel.caregivers, onToggleLogging = viewModel::setCaregiverLogging) }
+            }
+
+            item {
                 Text(
                     "Daily log history",
                     style = MaterialTheme.typography.titleLarge,
@@ -159,6 +167,47 @@ fun PatientDetailScreen(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     ) { Text(if (viewModel.isLoadingPage) "Loading…" else "Load more") }
                 }
+            }
+        }
+    }
+}
+
+/** Lists this patient's linked caregiver(s) with a per-caregiver "Can log entries" switch — the
+ *  only place in the app that can actually set canLogEntries to false. Without this, the
+ *  read-only enforcement threaded through TodayScreen/PatientCaregiverShell and the server's
+ *  /patient/daily and /patient/bleeding-event routes was correct but unreachable: nothing ever
+ *  wrote canLogEntries=false anywhere, so no caregiver account could ever actually become
+ *  read-only. */
+@Composable
+private fun CaregiversCard(caregivers: List<com.postpci.drrrp.data.sync.dto.CaregiverDto>, onToggleLogging: (String, Boolean) -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp)
+            .background(SurfaceCard, RoundedCornerShape(16.dp))
+            .border(1.dp, BorderHairline, RoundedCornerShape(16.dp))
+            .padding(16.dp),
+    ) {
+        Text("Caregivers", color = AccentYellowGold, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        caregivers.forEach { caregiver ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(caregiver.displayName, color = TextPrimary, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        if (caregiver.canLogEntries) "Can log entries" else "Read-only",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+                androidx.compose.material3.Switch(
+                    checked = caregiver.canLogEntries,
+                    onCheckedChange = { onToggleLogging(caregiver.uid, it) },
+                    colors = androidx.compose.material3.SwitchDefaults.colors(checkedThumbColor = AccentYellowGold, checkedTrackColor = AccentYellowGold.copy(alpha = 0.4f)),
+                )
             }
         }
     }

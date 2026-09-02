@@ -8,7 +8,10 @@ import androidx.lifecycle.viewModelScope
 import com.postpci.drrrp.data.local.DrRrpDatabase
 import com.postpci.drrrp.data.local.entity.DailyEntryEntity
 import com.postpci.drrrp.data.local.entity.PatientBaselineEntity
+import com.postpci.drrrp.data.sync.SyncApiService
 import com.postpci.drrrp.data.sync.SyncManager
+import com.postpci.drrrp.data.sync.dto.CaregiverDto
+import com.postpci.drrrp.data.sync.dto.SetCaregiverPermissionRequest
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -26,6 +29,7 @@ private const val PAGE_SIZE = 15
 class PatientDetailViewModel(
     private val database: DrRrpDatabase,
     private val syncManager: SyncManager,
+    private val syncApiService: SyncApiService,
     private val patientId: String,
 ) : ViewModel() {
     val baseline: StateFlow<PatientBaselineEntity?> =
@@ -47,6 +51,13 @@ class PatientDetailViewModel(
     var isInitialLoading by mutableStateOf(true)
         private set
 
+    /** Caregivers linked to this patient, with their current canLogEntries permission — see
+     *  [setCaregiverLogging]. Live-fetched (not stored in local Room; caregiver accounts live in
+     *  Firestore's users collection, not under this patient), so this list is only as fresh as
+     *  the last successful fetch — best-effort, same as everything else network-dependent here. */
+    var caregivers by mutableStateOf<List<CaregiverDto>>(emptyList())
+        private set
+
     init {
         viewModelScope.launch {
             // Pull a generous first batch so the existing local-paginated loadNextPage() below
@@ -59,6 +70,17 @@ class PatientDetailViewModel(
             }
             fetchNextPage()
             isInitialLoading = false
+        }
+        refreshCaregivers()
+    }
+
+    private fun refreshCaregivers() {
+        viewModelScope.launch {
+            try {
+                caregivers = syncApiService.getCaregivers(patientId)
+            } catch (e: Exception) {
+                // Best-effort — the "Caregivers" section just stays empty/stale until retried.
+            }
         }
     }
 
@@ -74,5 +96,18 @@ class PatientDetailViewModel(
         entries = entries + page
         hasMore = page.size == PAGE_SIZE
         isLoadingPage = false
+    }
+
+    /** Optimistic: flips the switch immediately so the toggle doesn't feel laggy, then reconciles
+     *  with the server — a failure re-fetches the real state rather than leaving a lie on screen. */
+    fun setCaregiverLogging(caregiverId: String, canLogEntries: Boolean) {
+        caregivers = caregivers.map { if (it.uid == caregiverId) it.copy(canLogEntries = canLogEntries) else it }
+        viewModelScope.launch {
+            try {
+                syncApiService.setCaregiverPermission(caregiverId, SetCaregiverPermissionRequest(canLogEntries))
+            } catch (e: Exception) {
+                refreshCaregivers()
+            }
+        }
     }
 }

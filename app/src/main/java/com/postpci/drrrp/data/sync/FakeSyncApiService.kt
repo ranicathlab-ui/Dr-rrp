@@ -3,11 +3,13 @@ package com.postpci.drrrp.data.sync
 import com.postpci.drrrp.data.sync.dto.AlertAcknowledgeRequest
 import com.postpci.drrrp.data.sync.dto.BaselineDto
 import com.postpci.drrrp.data.sync.dto.BleedingEventDto
+import com.postpci.drrrp.data.sync.dto.CaregiverDto
 import com.postpci.drrrp.data.sync.dto.DailyEntryDto
 import com.postpci.drrrp.data.sync.dto.DeviceRegisterRequest
 import com.postpci.drrrp.data.sync.dto.MessageDto
 import com.postpci.drrrp.data.sync.dto.PatientDetailResponse
 import com.postpci.drrrp.data.sync.dto.PatientListItemDto
+import com.postpci.drrrp.data.sync.dto.SetCaregiverPermissionRequest
 import kotlinx.coroutines.delay
 
 /**
@@ -58,5 +60,14 @@ class FakeSyncApiService : SyncApiService {
     override suspend fun getMessages(patientId: String): List<MessageDto> {
         delay(300)
         return emptyList()
+    }
+
+    override suspend fun getCaregivers(patientId: String): List<CaregiverDto> {
+        delay(300)
+        return emptyList()
+    }
+
+    override suspend fun setCaregiverPermission(caregiverId: String, body: SetCaregiverPermissionRequest) {
+        delay(300)
     }
 }

@@ -77,3 +77,14 @@ data class DeviceRegisterRequest(val fcmToken: String, val platform: String = "a
 
 @Serializable
 data class AlertAcknowledgeRequest(val staffId: String? = null)
+
+@Serializable
+data class CaregiverDto(
+    val uid: String,
+    val displayName: String,
+    val contactNumber: String? = null,
+    val canLogEntries: Boolean = true,
+)
+
+@Serializable
+data class SetCaregiverPermissionRequest(val canLogEntries: Boolean)

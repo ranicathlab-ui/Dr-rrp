@@ -159,6 +159,7 @@ app.post("/invite/caregiver", asyncHandler(async (req, res) => {
     role: "CAREGIVER",
     displayName: name,
     contactNumber,
+    canLogEntries: true,
     mustChangePassword: true,
     linkedPatientId,
     createdAt: new Date().toISOString(),
@@ -336,6 +337,30 @@ app.get("/staff/patients", asyncHandler(async (req, res) => {
   );
 
   res.status(200).json(items.filter(Boolean).sort((a, b) => (b.lastAlertAt || -1) - (a.lastAlertAt || -1)));
+}));
+
+app.get("/patient/:patientId/caregivers", asyncHandler(async (req, res) => {
+  const patientId = req.params.patientId;
+  if (!requirePatientAccess(req, res, patientId)) return;
+
+  const snap = await getFirestore().collection(USERS_COLLECTION).where("role", "==", "CAREGIVER").where("linkedPatientId", "==", patientId).get();
+  res.status(200).json(
+    snap.docs.map((d) => {
+      const c = d.data();
+      return { uid: d.id, displayName: c.displayName || "", contactNumber: c.contactNumber ?? null, canLogEntries: c.canLogEntries !== false };
+    }),
+  );
+}));
+
+app.put("/caregiver/:caregiverId/permissions", asyncHandler(async (req, res) => {
+  if (req.role !== "STAFF") return res.status(403).json({ error: "Only staff can change caregiver permissions." });
+  const caregiverId = req.params.caregiverId;
+  const caregiverDoc = await getFirestore().collection(USERS_COLLECTION).doc(caregiverId).get();
+  if (!caregiverDoc.exists || caregiverDoc.data()?.role !== "CAREGIVER") return res.status(404).json({ error: "Caregiver not found." });
+
+  const canLogEntries = req.body?.canLogEntries !== false; // defaults true, same convention as the read side
+  await caregiverDoc.ref.set({ canLogEntries }, { merge: true });
+  res.status(200).json({});
 }));
 
 // :patientId is part of the path here, not a cross-patient collectionGroup().where("id", "==", ...)
