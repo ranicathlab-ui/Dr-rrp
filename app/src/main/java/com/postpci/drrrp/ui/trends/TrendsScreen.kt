@@ -36,7 +36,9 @@ private data class TrendCard(val title: String, val series: List<ChartSeries>, v
 @Composable
 fun TrendsScreen(application: DrRrpApplication, patientId: String) {
     val viewModel: TrendsViewModel = viewModel(
-        key = patientId,
+        // Namespaced by class, not bare patientId — see EmergencyGateViewModel's comment on
+        // ViewModelStore key collisions across sibling ViewModels sharing the same store.
+        key = "Trends:$patientId",
         factory = viewModelFactory { initializer { TrendsViewModel(application.database, patientId) } },
     )
     val state by viewModel.uiState.collectAsState()

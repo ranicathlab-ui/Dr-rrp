@@ -64,8 +64,18 @@ fun PatientCaregiverShell(
     var showMessages by remember { mutableStateOf(false) }
     val currentUser by application.authGateway.currentUser.collectAsState()
 
+    // Keyed by class + patientId, not patientId alone: androidx's ViewModelStore maps a `key`
+    // string directly to a ViewModel instance with no per-class namespacing, so if two different
+    // ViewModel classes on this same store (e.g. this and TodayViewModel/TrendsViewModel/
+    // AlertsViewModel, all below) ever requested `viewModel(key = patientId, ...)` with the bare
+    // patientId, the second call's store.put() would silently evict *and clear* whichever
+    // ViewModel got there first — which is exactly what was happening here: this ViewModel was
+    // being constructed, then torn down within the same composition pass the moment TodayScreen's
+    // own `viewModel(key = patientId, ...)` ran, so its alert Flow never got the chance to emit
+    // and the full-screen emergency takeover could never appear. See sibling screens for the same
+    // "ClassName:patientId" pattern.
     val emergencyGate: EmergencyGateViewModel = viewModel(
-        key = patientId,
+        key = "EmergencyGate:$patientId",
         factory = viewModelFactory {
             initializer { EmergencyGateViewModel(application.patientCareRepository, patientId) }
         },
