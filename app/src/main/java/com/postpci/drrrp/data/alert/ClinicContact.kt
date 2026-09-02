@@ -6,7 +6,7 @@ package com.postpci.drrrp.data.alert
  * card — dials this same number; there is deliberately no separate emergency-services number.
  */
 object ClinicContact {
-    const val PHONE_NUMBER = "9894184664"
+    const val PHONE_NUMBER = "+919894184664"
 
     /** Shared label for every dial action in the app — keep this the single source of the wording. */
     const val CONTACT_LABEL = "Contact Dr. Rajaram Prasad"

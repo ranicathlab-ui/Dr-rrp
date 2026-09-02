@@ -22,7 +22,7 @@ Bottom-nav shell with four tabs (`PatientCaregiverShell.kt`):
 - **Profile** — read-only view of the full baseline the clinic recorded (demographics, procedural details, discharge labs & vitals, medications & follow-up, social) plus a prominent emergency-contact card. Editing is staff-only.
 - **Messages** — single chat thread per patient with the clinic, reachable via an inbox icon on Today.
 
-**Emergency escalation:** watched app-wide (not just on Today) by `EmergencyGateViewModel` — any unreviewed EMERGENCY-tier alert takes over the *entire* screen (hides the bottom nav too), with a single full-width primary action, **"Contact Dr. Rajaram Prasad"** (dials 9894184664 — same number as every other contact action in the app; there's no separate emergency-services number), until dismissed. This interrupts whichever tab the user is on.
+**Emergency escalation:** watched app-wide (not just on Today) by `EmergencyGateViewModel` — any unreviewed EMERGENCY-tier alert takes over the *entire* screen (hides the bottom nav too), with a single full-width primary action, **"Contact Dr. Rajaram Prasad"** (dials +919894184664 — same number as every other contact action in the app; there's no separate emergency-services number), until dismissed. This interrupts whichever tab the user is on.
 
 ## Staff experience
 

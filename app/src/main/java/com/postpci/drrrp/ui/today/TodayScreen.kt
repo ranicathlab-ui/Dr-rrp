@@ -14,13 +14,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Button
@@ -113,7 +113,12 @@ fun TodayScreen(
             return@DrRrpScaffold
         }
 
-        Column(modifier = modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
+        // verticalScroll here is load-bearing: the due-fields grid, medications checklist, and
+        // "Finish today's check-in" button together can easily exceed one screen (5+ due fields
+        // is normal), and without this the button was rendering entirely off-screen with no way
+        // to reach it — the "no submit button" bug. See LogEntrySheet's own scroll fix for the
+        // sibling case (the per-field entry sheet, once a value's typed and the keyboard is up).
+        Column(modifier = modifier.padding(horizontal = 20.dp, vertical = 16.dp).verticalScroll(rememberScrollState())) {
             GreetingHeader(state)
 
             if (!canLogEntries) {
@@ -144,15 +149,19 @@ fun TodayScreen(
                 color = TextPrimary,
                 modifier = Modifier.padding(top = 20.dp, bottom = 12.dp),
             )
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                // Medications get their own checklist section below, not a generic grid card.
-                items(state.dueFields.filter { it != MonitoringSchedule.MEDICATIONS_TAKEN }) { fieldKey ->
-                    DueFieldCard(fieldKey, state.todayEntry, enabled = canLogEntries) { activeFieldSheet = fieldKey }
+            // Not a LazyVerticalGrid: this Column already scrolls (see above), and nesting one
+            // scrollable inside another needs unbounded-height gymnastics for no real benefit —
+            // due fields are a short, fixed-size list (under ten), never a long feed. A plain
+            // chunked 2-column layout avoids that entirely.
+            // Medications get their own checklist section below, not a generic grid card.
+            state.dueFields.filter { it != MonitoringSchedule.MEDICATIONS_TAKEN }.chunked(2).forEach { rowFields ->
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                    rowFields.forEach { fieldKey ->
+                        Box(modifier = Modifier.weight(1f)) {
+                            DueFieldCard(fieldKey, state.todayEntry, enabled = canLogEntries) { activeFieldSheet = fieldKey }
+                        }
+                    }
+                    if (rowFields.size == 1) Spacer(modifier = Modifier.weight(1f))
                 }
             }
 

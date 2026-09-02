@@ -57,7 +57,7 @@ Summary of the auth/backend work, for review/adjustment. Firebase project: `dr-r
 
 ## 7. Contact number / emergency screen changes
 
-- `ClinicContact.PHONE_NUMBER` is now **9894184664** (Dr. Rajaram Prasad's real line), not a placeholder.
+- `ClinicContact.PHONE_NUMBER` is now **+919894184664** (Dr. Rajaram Prasad's real line), not a placeholder.
 - The **"Call 108"** emergency-services action was removed entirely. Every contact action in the app — routine banner, Profile card, and the emergency-escalation screen's single primary button — now dials the same number under the label `ClinicContact.CONTACT_LABEL` = "Contact Dr. Rajaram Prasad".
 
 ## 8. Test coverage

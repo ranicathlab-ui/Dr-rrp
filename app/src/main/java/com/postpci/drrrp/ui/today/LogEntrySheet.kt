@@ -4,8 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,7 +52,17 @@ import com.postpci.drrrp.ui.theme.TextSecondary
 @Composable
 fun LogEntrySheet(fieldKey: String, todayEntry: DailyEntryEntity?, viewModel: TodayViewModel, onDismiss: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = SurfaceCard) {
-        Column(modifier = Modifier.padding(20.dp).padding(bottom = 24.dp)) {
+        // Scrollable + imePadding: without these, a field with several inputs (blood pressure,
+        // access-site's four toggles, activity's two fields) plus the keyboard covering the
+        // lower half of the screen could push the Save button below the visible area with no way
+        // to reach it — exactly the "no submit button after entering vitals" bug this fixes.
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .imePadding()
+                .padding(20.dp)
+                .padding(bottom = 24.dp),
+        ) {
             Text(
                 text = fieldMetaByKey[fieldKey]?.label ?: fieldKey,
                 style = MaterialTheme.typography.headlineSmall,

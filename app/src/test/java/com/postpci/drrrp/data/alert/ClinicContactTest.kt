@@ -11,7 +11,7 @@ import org.junit.Test
 class ClinicContactTest {
     @Test
     fun phoneNumber_isDrRajaramPrasadsNumber() {
-        assertEquals("9894184664", ClinicContact.PHONE_NUMBER)
+        assertEquals("+919894184664", ClinicContact.PHONE_NUMBER)
     }
 
     @Test
