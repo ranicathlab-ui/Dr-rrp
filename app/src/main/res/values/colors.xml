@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- DR RRP dark-only palette. Kept in sync with ui/theme/Color.kt; used only for the
+         pre-Compose window theme (themes.xml) so there is no light flash on cold start. -->
+    <color name="background_near_black">#FF0A0E16</color>
+    <color name="header_deep_blue">#FF1B2E63</color>
+    <color name="header_bright_blue">#FF3E6EF0</color>
+    <color name="accent_yellow_gold">#FFFFC53D</color>
+    <color name="alert_red">#FFFF5A5F</color>
+    <color name="surface_card">#FF131A26</color>
+    <color name="border_hairline">#FF232E3F</color>
+</resources>

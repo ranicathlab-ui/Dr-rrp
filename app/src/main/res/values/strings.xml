@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">DR RRP</string>
+    <string name="clinic_name">Aasai Health Centre, Salem</string>
+    <string name="clinic_doctor">Dr. A. Rajaram Prasad</string>
+    <string name="notification_channel_emergency">Emergency alerts</string>
+    <string name="notification_channel_emergency_description">Urgent out-of-range readings that need immediate attention.</string>
+    <string name="notification_channel_routine">Routine alerts</string>
+    <string name="notification_channel_routine_description">Routine out-of-range readings and missed-entry reminders.</string>
+</resources>

@@ -1,0 +1,317 @@
+package com.postpci.drrrp.ui.today
+
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.postpci.drrrp.DrRrpApplication
+import com.postpci.drrrp.data.alert.ClinicContact
+import com.postpci.drrrp.data.local.entity.DailyEntryEntity
+import com.postpci.drrrp.data.model.AlertSeverity
+import com.postpci.drrrp.ui.common.DrRrpScaffold
+import com.postpci.drrrp.ui.theme.AccentYellowGold
+import com.postpci.drrrp.ui.theme.AlertRed
+import com.postpci.drrrp.ui.theme.BorderHairline
+import com.postpci.drrrp.ui.theme.IBMPlexMono
+import com.postpci.drrrp.ui.theme.SurfaceCard
+import com.postpci.drrrp.ui.theme.TextPrimary
+import com.postpci.drrrp.data.schedule.MonitoringSchedule
+import com.postpci.drrrp.ui.theme.TextSecondary
+
+/**
+ * The core loop: greeting + day badge, alert banner, today's due vitals grid, medication
+ * checklist (DAPT highlighted), and the finish button. Used for both the patient's own view and
+ * the caregiver view — [loggedByCaregiver] just flags whichever entries get saved.
+ */
+@Composable
+fun TodayScreen(
+    application: DrRrpApplication,
+    patientId: String,
+    loggedByCaregiver: Boolean,
+    /** False only for a caregiver whose account has logging disabled — see AuthUser.canLogEntries. */
+    canLogEntries: Boolean = true,
+    onSignOut: () -> Unit,
+    onOpenMessages: () -> Unit = {},
+) {
+    val viewModel: TodayViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { TodayViewModel(application.database, application.patientCareRepository, application.syncManager, patientId, loggedByCaregiver) }
+        },
+    )
+    val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    var activeFieldSheet by remember { mutableStateOf<String?>(null) }
+
+    DrRrpScaffold(
+        title = "Today",
+        actions = {
+            IconButton(onClick = onOpenMessages) {
+                Icon(Icons.Filled.Email, contentDescription = "Messages", tint = TextPrimary)
+            }
+            TextButton(onClick = onSignOut) { Text("Sign out", color = TextPrimary) }
+        },
+    ) { modifier ->
+        if (state.isLoading) {
+            Box(modifier = modifier, contentAlignment = Alignment.Center) { CircularProgressIndicator(color = AccentYellowGold) }
+            return@DrRrpScaffold
+        }
+        if (!state.hasBaseline) {
+            Box(modifier = modifier.padding(24.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    "Your clinic hasn't set up your recovery profile yet. Please contact Aasai Health Centre.",
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+            return@DrRrpScaffold
+        }
+
+        Column(modifier = modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
+            GreetingHeader(state)
+
+            if (!canLogEntries) {
+                Text(
+                    "This caregiver account is read-only — ask the clinic to enable logging if you need to record entries.",
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+            }
+
+            val routineAlerts = state.unreviewedAlerts.filter { it.severity == AlertSeverity.ROUTINE }
+            AnimatedVisibility(
+                visible = routineAlerts.isNotEmpty(),
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically(),
+            ) {
+                if (routineAlerts.isNotEmpty()) {
+                    AlertBanner(count = routineAlerts.size, latestMessage = routineAlerts.first().message) {
+                        context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${ClinicContact.PHONE_NUMBER}")))
+                    }
+                }
+            }
+
+            Text(
+                "Today's check-in",
+                style = MaterialTheme.typography.titleLarge,
+                color = TextPrimary,
+                modifier = Modifier.padding(top = 20.dp, bottom = 12.dp),
+            )
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                // Medications get their own checklist section below, not a generic grid card.
+                items(state.dueFields.filter { it != MonitoringSchedule.MEDICATIONS_TAKEN }) { fieldKey ->
+                    DueFieldCard(fieldKey, state.todayEntry, enabled = canLogEntries) { activeFieldSheet = fieldKey }
+                }
+            }
+
+            if (state.medications.isNotEmpty()) {
+                MedicationChecklist(state, viewModel, enabled = canLogEntries)
+            }
+
+            if (canLogEntries) {
+                var finished by remember { mutableStateOf(false) }
+                Button(
+                    onClick = { finished = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentYellowGold, contentColor = Color(0xFF241A00)),
+                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp),
+                ) {
+                    Text("Finish today's check-in", fontWeight = FontWeight.Bold)
+                }
+                AnimatedVisibility(
+                    visible = finished,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically(),
+                ) {
+                    val remaining = state.dueFields.count { !isFieldLogged(it, state.todayEntry) }
+                    Text(
+                        text = if (remaining == 0) "All done for today — thank you!" else "$remaining field(s) still need logging today.",
+                        color = if (remaining == 0) AccentYellowGold else TextSecondary,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
+    }
+
+    if (canLogEntries) {
+        activeFieldSheet?.let { fieldKey ->
+            LogEntrySheet(fieldKey, state.todayEntry, viewModel) { activeFieldSheet = null }
+        }
+    }
+}
+
+@Composable
+private fun GreetingHeader(state: TodayUiState) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Hi, ${state.patientName.ifBlank { "there" }}", style = MaterialTheme.typography.headlineSmall, color = TextPrimary)
+            Text("Aasai Health Centre, Salem", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+        }
+        state.dayNPostPci?.let { day ->
+            Box(
+                modifier = Modifier
+                    .background(AccentYellowGold, RoundedCornerShape(20.dp))
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                Text("Day $day post-PCI", color = Color(0xFF241A00), fontWeight = FontWeight.Bold, fontFamily = IBMPlexMono)
+            }
+        }
+    }
+}
+
+@Composable
+private fun AlertBanner(count: Int, latestMessage: String, onCallClinic: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp)
+            .background(AlertRed.copy(alpha = 0.16f), RoundedCornerShape(16.dp))
+            .border(1.dp, AlertRed, RoundedCornerShape(16.dp))
+            .padding(16.dp),
+    ) {
+        Text("$count reading(s) need attention", color = AlertRed, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+        Text(latestMessage, color = TextPrimary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp, bottom = 12.dp))
+        Button(
+            onClick = onCallClinic,
+            colors = ButtonDefaults.buttonColors(containerColor = AlertRed, contentColor = Color.White),
+        ) { Text(ClinicContact.CONTACT_LABEL) }
+    }
+}
+
+@Composable
+private fun DueFieldCard(fieldKey: String, entry: DailyEntryEntity?, enabled: Boolean = true, onClick: () -> Unit) {
+    val meta = fieldMetaByKey[fieldKey]
+    val logged = isFieldLogged(fieldKey, entry)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1.3f)
+            .background(SurfaceCard, RoundedCornerShape(16.dp))
+            .border(1.dp, if (logged) AccentYellowGold.copy(alpha = 0.5f) else BorderHairline, RoundedCornerShape(16.dp))
+            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(14.dp),
+    ) {
+        Text(meta?.label ?: fieldKey, style = MaterialTheme.typography.titleSmall, color = TextPrimary, fontWeight = FontWeight.SemiBold)
+        Text(meta?.rangeText ?: "", style = MaterialTheme.typography.labelSmall, color = TextSecondary, modifier = Modifier.padding(top = 4.dp))
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Bottom) {
+            Text(
+                text = if (logged) "Logged ✓" else if (enabled) "Tap to log" else "Not logged",
+                color = if (logged) AccentYellowGold else TextSecondary,
+                style = MaterialTheme.typography.labelLarge,
+                fontFamily = if (logged) IBMPlexMono else null,
+            )
+        }
+    }
+}
+
+private fun isFieldLogged(fieldKey: String, entry: DailyEntryEntity?): Boolean {
+    if (entry == null) return false
+    return when (fieldKey) {
+        MonitoringSchedule.RESTING_HEART_RATE -> entry.restingHeartRate != null
+        MonitoringSchedule.BLOOD_PRESSURE -> entry.bpSystolic != null && entry.bpDiastolic != null
+        MonitoringSchedule.SPO2 -> entry.spo2 != null
+        MonitoringSchedule.WEIGHT -> entry.weightKg != null
+        MonitoringSchedule.ACCESS_SITE_CHECK ->
+            entry.accessSiteBleeding != null && entry.accessSiteSwelling != null && entry.accessSitePain != null && entry.accessSiteDiscolouration != null
+        MonitoringSchedule.CHEST_PAIN -> entry.chestPainCount != null
+        MonitoringSchedule.ACTIVITY -> entry.stepsOrMinutesWalked != null
+        MonitoringSchedule.PALPITATIONS_SYNCOPE ->
+            entry.palpitations != null && entry.syncope != null && entry.nearSyncope != null
+        MonitoringSchedule.BREATHLESSNESS -> entry.nyhaClass != null
+        else -> false
+    }
+}
+
+@Composable
+private fun MedicationChecklist(state: TodayUiState, viewModel: TodayViewModel, enabled: Boolean = true) {
+    var checkedState by remember(state.todayEntry?.id) {
+        val taken = state.todayEntry?.medicationsTaken?.split(",")?.filter { it.isNotBlank() }?.toSet().orEmpty()
+        mutableStateOf(taken)
+    }
+
+    Text("Medications today", style = MaterialTheme.typography.titleLarge, color = TextPrimary, modifier = Modifier.padding(top = 24.dp, bottom = 12.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(SurfaceCard, RoundedCornerShape(16.dp))
+            .border(1.dp, BorderHairline, RoundedCornerShape(16.dp))
+            .padding(8.dp),
+    ) {
+        state.medications.forEach { med ->
+            val checked = med.key in checkedState
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(if (med.isDapt) Modifier.background(AccentYellowGold.copy(alpha = 0.10f), RoundedCornerShape(10.dp)) else Modifier)
+                    .padding(6.dp),
+            ) {
+                Checkbox(
+                    checked = checked,
+                    enabled = enabled,
+                    onCheckedChange = { isChecked ->
+                        val updated = if (isChecked) checkedState + med.key else checkedState - med.key
+                        checkedState = updated
+                        viewModel.submitMedications(updated.toList(), daptTaken = "dapt" in updated)
+                    },
+                    colors = CheckboxDefaults.colors(checkedColor = AccentYellowGold, checkmarkColor = Color(0xFF241A00)),
+                )
+                Text(
+                    med.label + if (med.isDapt) " (DAPT)" else "",
+                    color = if (med.isDapt) AccentYellowGold else TextPrimary,
+                    fontWeight = if (med.isDapt) FontWeight.Bold else FontWeight.Normal,
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+        }
+    }
+}

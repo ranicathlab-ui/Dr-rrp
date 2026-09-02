@@ -1,0 +1,45 @@
+# --- Android / Gradle ---
+*.iml
+.gradle
+/local.properties
+local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+/.idea/modules.xml
+.DS_Store
+/build
+app/build/
+/captures
+.externalNativeBuild
+.cxx
+
+# --- Secrets — never commit these ---
+# Firebase Android config: contains this project's API key/app ID. Not strictly a secret (it's
+# restricted by package name + SHA-1), but keep it out of version control anyway — re-download
+# from the Firebase Console (Project settings > Your apps) if a fresh checkout needs it.
+app/google-services.json
+# Any Firebase/GCP service account key, wherever it ends up (server/ needs one locally for
+# testing — see server/README.md — never for deployment; Render holds it as an env var instead).
+*serviceAccount*.json
+*-firebase-adminsdk-*.json
+*.pem
+*.p12
+*.jks
+*.keystore
+.env
+.env.*
+
+# --- Node (functions/, server/) ---
+node_modules/
+npm-debug.log*
+
+# --- Firebase CLI / emulator artifacts ---
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+*.emulator-data/

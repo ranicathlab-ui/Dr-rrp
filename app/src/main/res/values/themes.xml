@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- DR RRP is dark-only: base off the non-DayNight Material3 dark theme so the app never
+         follows the system light/dark setting. Compose's DrRrpTheme takes over once content
+         loads; this only governs window chrome and the brief pre-Compose frame. -->
+    <style name="Theme.DrRrp" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">@color/background_near_black</item>
+        <item name="android:statusBarColor">@color/background_near_black</item>
+        <item name="android:navigationBarColor">@color/background_near_black</item>
+        <item name="colorPrimary">@color/accent_yellow_gold</item>
+    </style>
+</resources>

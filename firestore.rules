@@ -1,0 +1,98 @@
+rules_version = '2';
+
+// DR RRP app — Firestore security rules.
+//
+// All patient data now lives in Firestore too (patients/{patientId} and its entries/
+// bleedingEvents/alerts/messages subcollections — see functions/index.js), written exclusively
+// through the Cloud Functions REST API (data/sync/SyncApiService.kt), which runs on the Admin
+// SDK and bypasses these rules entirely. So in normal operation these rules are never actually
+// evaluated for patient data — they exist as defense-in-depth for the case someone points the
+// Firestore client SDK directly at this database using a real signed-in user's ID token,
+// bypassing the REST layer. They mirror the exact same access checks the REST API enforces
+// server-side in lib/auth.js — keep the two in sync if either changes.
+//
+// Schema for users/{uid} (written server-side only, via the createPatientInvite/
+// createCaregiverInvite Cloud Functions):
+//   role              "STAFF" | "PATIENT" | "CAREGIVER"
+//   displayName       string
+//   mustChangePassword  bool — true until the user completes first-login password setup
+//   linkedPatientId   string, caregivers only — the patient uid they're linked to
+//   canLogEntries     bool, caregivers only — defaults to true if absent; false makes the
+//                     caregiver's app read-only (see PatientCaregiverShell.kt)
+//   fcmTokens         string[] — registered push tokens, written by POST auth/register-device
+//
+// Schema for patients/{patientId}: flattened baseline fields (mirrors BaselineDto) plus
+// lastAlertSeverity/lastAlertAt, denormalized by the alert-creation trigger for the staff
+// dashboard's "sorted by most recent flag" list.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isStaff() {
+      return isSignedIn() && myProfile().role == "STAFF";
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    /** Mirrors lib/auth.js's canAccessPatient — keep the two in sync. */
+    function canAccessPatient(patientId) {
+      return isStaff()
+        || isSelf(patientId)
+        || (isSignedIn() && myProfile().role == "CAREGIVER" && myProfile().linkedPatientId == patientId);
+    }
+
+    match /users/{uid} {
+      // Anyone signed in can read their own profile (needed to determine their own role right
+      // after login). Staff can read any profile.
+      allow read: if isSelf(uid) || isStaff();
+
+      // Only a Cloud Function (Admin SDK, bypasses rules) creates user docs — see
+      // FirebaseAuthGateway's createPatientInvite/createCaregiverInvite doc.
+      allow create: if false;
+
+      // Staff may update any profile. A user may update only their own mustChangePassword flag
+      // or fcmTokens (the two fields the client itself is ever meant to touch directly).
+      allow update: if isStaff()
+        || (isSelf(uid) && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(["mustChangePassword", "fcmTokens"]));
+
+      allow delete: if false;
+    }
+
+    match /patients/{patientId} {
+      allow read: if canAccessPatient(patientId);
+      // All writes go through the REST API's Admin SDK — never directly from a client.
+      allow write: if false;
+
+      match /entries/{entryId} {
+        allow read: if canAccessPatient(patientId);
+        allow write: if false;
+      }
+      match /bleedingEvents/{eventId} {
+        allow read: if canAccessPatient(patientId);
+        allow write: if false;
+      }
+      match /alerts/{alertId} {
+        allow read: if canAccessPatient(patientId);
+        allow write: if false;
+      }
+      match /messages/{messageId} {
+        allow read: if canAccessPatient(patientId);
+        allow write: if false;
+      }
+    }
+
+    // Everything else is denied by default (Firestore rules are deny-by-default) — no explicit
+    // catch-all needed.
+  }
+}

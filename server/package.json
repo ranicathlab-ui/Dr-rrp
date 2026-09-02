@@ -1,0 +1,17 @@
+{
+  "name": "dr-rrp-server",
+  "description": "DR RRP backend — standalone Express server (see index.js doc comment for why this isn't a Cloud Function).",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "firebase-admin": "^13.5.0"
+  }
+}
