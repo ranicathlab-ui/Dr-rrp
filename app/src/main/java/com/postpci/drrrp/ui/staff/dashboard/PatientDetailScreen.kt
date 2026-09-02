@@ -145,7 +145,11 @@ fun PatientDetailScreen(
             }
 
             item {
-                if (viewModel.entries.isEmpty() && !viewModel.isLoadingPage) {
+                if (viewModel.isInitialLoading) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = AccentYellowGold)
+                    }
+                } else if (viewModel.entries.isEmpty()) {
                     Text("No daily entries logged yet.", color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
                 } else if (viewModel.hasMore) {
                     Button(

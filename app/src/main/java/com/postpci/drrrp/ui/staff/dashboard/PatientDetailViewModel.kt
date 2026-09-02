@@ -38,6 +38,15 @@ class PatientDetailViewModel(
     var isLoadingPage by mutableStateOf(false)
         private set
 
+    // Separate from isLoadingPage (which also gates the "Load more" button/text): stays true
+    // until the *first* pull + page fetch has fully finished, so the screen's "No daily entries
+    // logged yet." message — gated on entries.isEmpty() — can't flash true during the initial
+    // pullPatient() call below, which can take a while (retries, a slow/cold backend) and runs
+    // before loadNextPage() ever touches isLoadingPage itself. Reproduced live while the backend
+    // was returning 502s, where that gap was long enough to actually show on screen.
+    var isInitialLoading by mutableStateOf(true)
+        private set
+
     init {
         viewModelScope.launch {
             // Pull a generous first batch so the existing local-paginated loadNextPage() below
@@ -48,19 +57,22 @@ class PatientDetailViewModel(
             } catch (e: Exception) {
                 // Offline or the request failed — fall through to whatever's already local.
             }
-            loadNextPage()
+            fetchNextPage()
+            isInitialLoading = false
         }
     }
 
     /** Never loads the full history in one call — pages of [PAGE_SIZE], per spec. */
     fun loadNextPage() {
         if (isLoadingPage || !hasMore) return
-        viewModelScope.launch {
-            isLoadingPage = true
-            val page = database.dailyEntryDao().getPage(patientId, PAGE_SIZE, entries.size)
-            entries = entries + page
-            hasMore = page.size == PAGE_SIZE
-            isLoadingPage = false
-        }
+        viewModelScope.launch { fetchNextPage() }
+    }
+
+    private suspend fun fetchNextPage() {
+        isLoadingPage = true
+        val page = database.dailyEntryDao().getPage(patientId, PAGE_SIZE, entries.size)
+        entries = entries + page
+        hasMore = page.size == PAGE_SIZE
+        isLoadingPage = false
     }
 }
