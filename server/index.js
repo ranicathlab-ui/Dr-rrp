@@ -29,12 +29,26 @@ const monitoringSchedule = require("./lib/monitoringSchedule");
 const push = require("./lib/push");
 
 // ---- Firebase Admin init — service account credentials, not the Cloud Functions default ADC ----
-const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-if (!serviceAccountJson) {
-  console.error("FIREBASE_SERVICE_ACCOUNT_JSON is not set — see server/README.md. Exiting.");
-  process.exit(1);
+// FIREBASE_SERVICE_ACCOUNT_JSON accepts either the raw JSON or a base64-encoded version of it.
+// Some host UIs (Render's env var paste box included) detect pasted JSON and auto-split it into
+// one variable per top-level key instead of keeping it as a single value — base64 has none of
+// the characters ({, ", :, newlines) that trigger that, so it pastes as one clean value. See
+// server/README.md for exactly how to generate it.
+function loadServiceAccount() {
+  const raw = (process.env.FIREBASE_SERVICE_ACCOUNT_JSON || "").trim();
+  if (!raw) {
+    console.error("FIREBASE_SERVICE_ACCOUNT_JSON is not set — see server/README.md. Exiting.");
+    process.exit(1);
+  }
+  const jsonText = raw.startsWith("{") ? raw : Buffer.from(raw, "base64").toString("utf8");
+  try {
+    return JSON.parse(jsonText);
+  } catch (e) {
+    console.error("FIREBASE_SERVICE_ACCOUNT_JSON is set but isn't valid JSON (or valid base64-encoded JSON) — see server/README.md. Exiting.");
+    process.exit(1);
+  }
 }
-initializeApp({ credential: cert(JSON.parse(serviceAccountJson)) });
+initializeApp({ credential: cert(loadServiceAccount()) });
 
 const PATIENTS = "patients";
 const USERS_COLLECTION = "users";
