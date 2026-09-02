@@ -65,6 +65,19 @@ function syntheticEmail(name) {
   return `${slug || "invite"}.${suffix}@${INVITE_EMAIL_DOMAIN}`;
 }
 
+// Wraps an async route handler so a rejected promise reaches Express's error-handling middleware
+// (below) instead of becoming an unhandled rejection. Express 4 does NOT do this automatically for
+// async handlers — every route in this file used to be one uncaught Firestore/Auth error away from
+// crashing the whole Node process, which Render then reports as 502 to every concurrent client
+// until it restarts, and the exact same crash repeats the next time the same bad request is
+// retried (which the Android client's offline-sync queue does automatically). Reproduced live via
+// the old /alert/acknowledge/:alertId route's collectionGroup query, which needed a Firestore index
+// that was never created — every retry of that one alert's acknowledgment took the whole backend
+// down until it was rewritten below to not need cross-patient querying at all.
+function asyncHandler(fn) {
+  return (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+}
+
 const app = express();
 app.use(express.json({ limit: "1mb" }));
 
@@ -72,7 +85,7 @@ app.get("/health", (req, res) => res.status(200).json({ ok: true }));
 
 // Registered before authenticate: this is hit by an external cron service, not a signed-in
 // Firebase user — it has its own shared-secret check instead (see the handler below).
-app.post("/internal/check-missed-entries", async (req, res) => {
+app.post("/internal/check-missed-entries", asyncHandler(async (req, res) => {
   if (!process.env.MISSED_ENTRY_CRON_SECRET || req.get("X-Cron-Secret") !== process.env.MISSED_ENTRY_CRON_SECRET) {
     return res.status(401).json({ error: "Unauthorized." });
   }
@@ -100,7 +113,7 @@ app.post("/internal/check-missed-entries", async (req, res) => {
   }
 
   res.status(200).json({ checked: patientsSnap.docs.length, flagged });
-});
+}));
 
 app.use(authenticate);
 
@@ -110,7 +123,7 @@ app.use(authenticate);
 // FirebaseAuthGateway.kt) instead of the Firebase Functions SDK.
 // ============================================================================================
 
-app.post("/invite/patient", async (req, res) => {
+app.post("/invite/patient", asyncHandler(async (req, res) => {
   if (req.role !== "STAFF") return res.status(403).json({ error: "Only staff can create invites." });
   const name = (req.body?.name || "").trim();
   if (!name) return res.status(400).json({ error: "name is required." });
@@ -128,9 +141,9 @@ app.post("/invite/patient", async (req, res) => {
   });
 
   res.status(200).json({ patientId: userRecord.uid, email, temporaryPassword });
-});
+}));
 
-app.post("/invite/caregiver", async (req, res) => {
+app.post("/invite/caregiver", asyncHandler(async (req, res) => {
   if (req.role !== "STAFF") return res.status(403).json({ error: "Only staff can create invites." });
   const name = (req.body?.name || "").trim();
   const linkedPatientId = (req.body?.patientId || "").trim();
@@ -155,7 +168,7 @@ app.post("/invite/caregiver", async (req, res) => {
   // Field is named patientId to match the Android InviteCredentials shape (it's actually the
   // new caregiver's own uid — see FakeAuthGateway.createCaregiverInvite for the same convention).
   res.status(200).json({ patientId: userRecord.uid, email, temporaryPassword });
-});
+}));
 
 // ============================================================================================
 // REST API — implements SyncApiService.kt's contract. Every route requires a verified Firebase
@@ -163,26 +176,26 @@ app.post("/invite/caregiver", async (req, res) => {
 // checking it against the token first.
 // ============================================================================================
 
-app.post("/auth/register-device", async (req, res) => {
+app.post("/auth/register-device", asyncHandler(async (req, res) => {
   const token = req.body?.fcmToken;
   if (!token) return res.status(400).json({ error: "fcmToken is required." });
   await getFirestore().collection(USERS_COLLECTION).doc(req.uid).set({ fcmTokens: FieldValue.arrayUnion(token) }, { merge: true });
   res.status(200).json({});
-});
+}));
 
-app.post("/patient/baseline", async (req, res) => {
+app.post("/patient/baseline", asyncHandler(async (req, res) => {
   if (req.role !== "STAFF") return res.status(403).json({ error: "Baseline can only be created by staff." });
   const dto = req.body;
   if (!dto?.patientId) return res.status(400).json({ error: "patientId is required." });
   await getFirestore().collection(PATIENTS).doc(dto.patientId).set(dto, { merge: true });
   res.status(200).json({});
-});
+}));
 
-app.put("/patient/baseline/:patientId", async (req, res) => {
+app.put("/patient/baseline/:patientId", asyncHandler(async (req, res) => {
   if (req.role !== "STAFF") return res.status(403).json({ error: "Baseline can only be edited by staff." });
   await getFirestore().collection(PATIENTS).doc(req.params.patientId).set(req.body, { merge: true });
   res.status(200).json({});
-});
+}));
 
 /** Runs the alert checks for one freshly-written daily entry, writes any new alert docs
  *  (create-if-absent — never overwrites, could clobber a staff review), updates the parent
@@ -229,7 +242,7 @@ async function createAlertIfAbsentAndPush(patientId, alertId, draft, sourceType,
   });
 }
 
-app.post("/patient/daily/:patientId", async (req, res) => {
+app.post("/patient/daily/:patientId", asyncHandler(async (req, res) => {
   const patientId = req.params.patientId;
   if (!requirePatientAccess(req, res, patientId)) return;
   if (req.role === "CAREGIVER" && !req.canLogEntries) return res.status(403).json({ error: "This caregiver account is read-only." });
@@ -244,9 +257,9 @@ app.post("/patient/daily/:patientId", async (req, res) => {
     console.error("alert generation failed for entry", dto.id, e); // the entry write above already succeeded; don't fail the request over this
   }
   res.status(200).json({});
-});
+}));
 
-app.post("/patient/bleeding-event/:patientId", async (req, res) => {
+app.post("/patient/bleeding-event/:patientId", asyncHandler(async (req, res) => {
   const patientId = req.params.patientId;
   if (!requirePatientAccess(req, res, patientId)) return;
   if (req.role === "CAREGIVER" && !req.canLogEntries) return res.status(403).json({ error: "This caregiver account is read-only." });
@@ -262,9 +275,9 @@ app.post("/patient/bleeding-event/:patientId", async (req, res) => {
     console.error("alert generation failed for bleeding event", dto.id, e);
   }
   res.status(200).json({});
-});
+}));
 
-app.get("/patient/:patientId", async (req, res) => {
+app.get("/patient/:patientId", asyncHandler(async (req, res) => {
   const patientId = req.params.patientId;
   if (!requirePatientAccess(req, res, patientId)) return;
 
@@ -288,9 +301,9 @@ app.get("/patient/:patientId", async (req, res) => {
     alerts: alertsSnap.docs.map((d) => d.data()),
     nextCursor,
   });
-});
+}));
 
-app.get("/staff/patients", async (req, res) => {
+app.get("/staff/patients", asyncHandler(async (req, res) => {
   if (req.role !== "STAFF") return res.status(403).json({ error: "Staff only." });
   const search = (req.query.search || "").toString().toLowerCase();
 
@@ -323,22 +336,29 @@ app.get("/staff/patients", async (req, res) => {
   );
 
   res.status(200).json(items.filter(Boolean).sort((a, b) => (b.lastAlertAt || -1) - (a.lastAlertAt || -1)));
-});
+}));
 
-app.post("/alert/acknowledge/:alertId", async (req, res) => {
-  const firestore = getFirestore();
-  const snap = await firestore.collectionGroup("alerts").where("id", "==", req.params.alertId).limit(1).get();
-  if (snap.empty) return res.status(404).json({ error: "Alert not found." });
-
-  const alertDoc = snap.docs[0];
-  const patientId = alertDoc.data().patientId;
+// :patientId is part of the path here, not a cross-patient collectionGroup().where("id", "==", ...)
+// search: that query shape needs a manual collection-group index that was never created for this
+// project, and every acknowledgment of a real alert was throwing FAILED_PRECONDITION as a result —
+// which, unhandled by any route in this file until asyncHandler above, was crashing the whole
+// backend process on every retry (reproduced live: a stuck pending alert-acknowledge in the
+// Android client's offline-sync queue took the entire service down repeatedly). The client always
+// has the alert's own patientId locally already (AlertEntity.patientId), so there's no reason to
+// search for it server-side — a direct doc reference needs no index at all.
+app.post("/alert/acknowledge/:patientId/:alertId", asyncHandler(async (req, res) => {
+  const { patientId, alertId } = req.params;
   if (!requirePatientAccess(req, res, patientId)) return;
 
-  await alertDoc.ref.set({ reviewed: true, reviewedAt: Date.now(), reviewedByStaffId: req.body?.staffId ?? null }, { merge: true });
-  res.status(200).json({});
-});
+  const alertRef = getFirestore().collection(PATIENTS).doc(patientId).collection("alerts").doc(alertId);
+  const alertDoc = await alertRef.get();
+  if (!alertDoc.exists) return res.status(404).json({ error: "Alert not found." });
 
-app.post("/message/:patientId", async (req, res) => {
+  await alertRef.set({ reviewed: true, reviewedAt: Date.now(), reviewedByStaffId: req.body?.staffId ?? null }, { merge: true });
+  res.status(200).json({});
+}));
+
+app.post("/message/:patientId", asyncHandler(async (req, res) => {
   const patientId = req.params.patientId;
   if (!requirePatientAccess(req, res, patientId)) return;
   const dto = req.body;
@@ -352,19 +372,35 @@ app.post("/message/:patientId", async (req, res) => {
     console.error("push failed for message", dto.id, e);
   }
   res.status(200).json({});
-});
+}));
 
-app.get("/message/:patientId", async (req, res) => {
+app.get("/message/:patientId", asyncHandler(async (req, res) => {
   const patientId = req.params.patientId;
   if (!requirePatientAccess(req, res, patientId)) return;
   const snap = await getFirestore().collection(PATIENTS).doc(patientId).collection("messages").orderBy("timestamp", "asc").get();
   res.status(200).json(snap.docs.map((d) => d.data()));
-});
+}));
 
 // authenticate() runs before every route above, including /invite/*, so an authentication
 // failure there (missing/invalid token) already responded before reaching this handler — this
 // only catches routes that don't match anything at all.
 app.use((req, res) => res.status(404).json({ error: "Not found." }));
+
+// Final safety net: catches whatever asyncHandler forwards via next(err), plus any synchronous
+// throw from a non-async handler. Without this, an uncaught error here would fall through to
+// Express's default handler, which sends an HTML stack trace instead of the JSON every Android
+// client expects — and depending on Node/Express version, can still crash the process.
+app.use((err, req, res, next) => {
+  console.error("Unhandled request error:", err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: "Internal server error." });
+});
+
+// Belt-and-suspenders: log anything that still gets past every handler above instead of letting
+// it silently crash the process (Node's default for an unhandled rejection since v15). This
+// should never actually fire now that every route goes through asyncHandler, but a mistake here
+// is exactly the kind of thing that took the whole backend down repeatedly before that existed.
+process.on("unhandledRejection", (reason) => console.error("Unhandled promise rejection:", reason));
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`DR RRP backend listening on :${port}`));

@@ -51,8 +51,11 @@ interface SyncApiService {
     @GET("staff/patients")
     suspend fun getStaffPatients(@Query("search") search: String? = null, @Query("sort") sort: String? = null): List<PatientListItemDto>
 
-    @POST("alert/acknowledge/{alertId}")
-    suspend fun acknowledgeAlert(@Path("alertId") alertId: String, @Body body: AlertAcknowledgeRequest)
+    // patientId is part of the path, not just alertId — see server/index.js's doc on this route
+    // for why: a cross-patient collectionGroup search by alertId alone needed a Firestore index
+    // that was never created and was crashing the backend on every retry.
+    @POST("alert/acknowledge/{patientId}/{alertId}")
+    suspend fun acknowledgeAlert(@Path("patientId") patientId: String, @Path("alertId") alertId: String, @Body body: AlertAcknowledgeRequest)
 
     @POST("message/{patientId}")
     suspend fun sendMessage(@Path("patientId") patientId: String, @Body body: MessageDto)

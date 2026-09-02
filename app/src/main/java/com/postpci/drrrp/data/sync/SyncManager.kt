@@ -90,7 +90,7 @@ class SyncManager(
             database.alertDao().getPendingSync(),
             { alert ->
                 if (alert.reviewed) {
-                    api.acknowledgeAlert(alert.id, AlertAcknowledgeRequest(alert.reviewedByStaffId))
+                    api.acknowledgeAlert(alert.patientId, alert.id, AlertAcknowledgeRequest(alert.reviewedByStaffId))
                 }
                 // A freshly-created, still-unreviewed alert has nothing to push: it's generated
                 // server-side too (functions/index.js's Firestore triggers), so acknowledgement is

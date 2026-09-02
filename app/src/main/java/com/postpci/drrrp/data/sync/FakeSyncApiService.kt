@@ -47,7 +47,7 @@ class FakeSyncApiService : SyncApiService {
         return emptyList()
     }
 
-    override suspend fun acknowledgeAlert(alertId: String, body: AlertAcknowledgeRequest) {
+    override suspend fun acknowledgeAlert(patientId: String, alertId: String, body: AlertAcknowledgeRequest) {
         delay(300)
     }
 
