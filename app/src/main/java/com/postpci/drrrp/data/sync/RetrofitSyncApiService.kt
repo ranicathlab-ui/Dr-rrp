@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
  * [HttpLoggingInterceptor] is BASIC (method/URL/status only) even in debug builds, never BODY.
  */
 object RetrofitSyncApiService {
-    private const val BASE_URL = "https://dr-rrp-backend.onrender.com/"
+    private const val BASE_URL = "https://dr-rrp-aasai-backend.onrender.com/"
 
     private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
 

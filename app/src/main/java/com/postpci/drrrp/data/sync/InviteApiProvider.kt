@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
 object InviteApiProvider {
     // Same backend as RetrofitSyncApiService — update both together (see that file's doc for why
     // this points at Render rather than a Cloud Function).
-    private const val BASE_URL = "https://dr-rrp-backend.onrender.com/"
+    private const val BASE_URL = "https://dr-rrp-aasai-backend.onrender.com/"
 
     private val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
 
