@@ -25,6 +25,36 @@ class SyncManager(
 ) {
 
     suspend fun syncAll(): SyncResult {
+        val result = pushPending()
+
+        // Push before pull: anything this device just pushed above is now the server's canonical
+        // copy too, so pulling right after can't clobber it with stale data.
+        selfPatientId()?.let { patientId ->
+            try {
+                pullPatientOnly(patientId)
+                pullMessages(patientId)
+            } catch (e: Exception) {
+                // Best-effort — the next periodic run tries again; a failed pull doesn't affect
+                // the push results already recorded above.
+            }
+        }
+
+        return result
+    }
+
+    /**
+     * Drains every pending queue into the backend — the push half of [syncAll], factored out so
+     * [pullPatient] can call it too. Without this, a screen that pulls on its own (every
+     * TodayViewModel/AlertsViewModel/etc. does, on every visit, independent of the periodic
+     * WorkManager sync job) could race ahead of a not-yet-pushed local write — e.g. marking an
+     * alert reviewed, or logging a vital — and silently clobber it: every pull-mapper stamps
+     * `syncStatus = SYNCED` unconditionally (see Mappers.kt), and upsert replaces the whole row,
+     * so a pull winning that race doesn't just show stale data for one frame, it permanently
+     * erases the fact that there was ever a pending local change to push. Reproduced live: an
+     * alert marked "Reviewed" would revert to unreviewed after a relaunch, because TodayViewModel's
+     * own pull ran before the WorkManager-scheduled push had a chance to fire.
+     */
+    private suspend fun pushPending(): SyncResult {
         var succeeded = 0
         var failed = 0
 
@@ -74,18 +104,6 @@ class SyncManager(
             { database.messageDao().setSyncStatus(it.id, SyncStatus.SYNCED) },
         )
 
-        // Push before pull: anything this device just pushed above is now the server's canonical
-        // copy too, so pulling right after can't clobber it with stale data.
-        selfPatientId()?.let { patientId ->
-            try {
-                pullPatient(patientId)
-                pullMessages(patientId)
-            } catch (e: Exception) {
-                // Best-effort — the next periodic run tries again; a failed pull doesn't affect
-                // the push results already recorded above.
-            }
-        }
-
         return SyncResult(succeeded, failed)
     }
 
@@ -106,8 +124,18 @@ class SyncManager(
      * them into local Room. Safe to call repeatedly (e.g. every screen open) — every pulled
      * record upserts by its own id, converging with whatever's already local rather than
      * duplicating it (see the alert-id note on PatientCareRepository.raiseAlert).
+     *
+     * Always pushes pending local changes first (see [pushPending]'s doc) — this is the one
+     * function nearly every screen calls directly on its own, so it's the one place that has to
+     * be race-safe on its own rather than relying on the periodic WorkManager job to have won a
+     * race it doesn't know it's in.
      */
     suspend fun pullPatient(patientId: String, limit: Int = 20) {
+        pushPending()
+        pullPatientOnly(patientId, limit)
+    }
+
+    private suspend fun pullPatientOnly(patientId: String, limit: Int = 20) {
         val response = api.getPatient(patientId, cursor = null, limit = limit)
         response.baseline?.let { database.patientBaselineDao().upsert(it.toEntity()) }
         response.dailyEntries.forEach { database.dailyEntryDao().upsert(it.toEntity()) }
