@@ -29,7 +29,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import com.postpci.drrrp.ui.onboarding.LegalTextDialog
-import com.postpci.drrrp.ui.onboarding.openLegalLink
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,7 +88,6 @@ fun ProfileScreen(application: DrRrpApplication, patientId: String) {
  * than in-app text. */
 @Composable
 private fun LegalAndDataSection(application: DrRrpApplication, patientId: String) {
-    val context = LocalContext.current
     val currentUser by application.authGateway.currentUser.collectAsState()
     val scope = rememberCoroutineScope()
     var showConfirmDialog by remember { mutableStateOf(false) }
@@ -98,10 +96,10 @@ private fun LegalAndDataSection(application: DrRrpApplication, patientId: String
     var showTermsDialog by remember { mutableStateOf(false) }
 
     SectionCard("Legal") {
-        TextButton(onClick = { openLegalLink(context, LegalLinks.PRIVACY_POLICY_URL) { showPrivacyDialog = true } }) {
+        TextButton(onClick = { showPrivacyDialog = true }) {
             Text("Privacy Policy", color = AccentYellowGold)
         }
-        TextButton(onClick = { openLegalLink(context, LegalLinks.TERMS_URL) { showTermsDialog = true } }) {
+        TextButton(onClick = { showTermsDialog = true }) {
             Text("Terms & Conditions", color = AccentYellowGold)
         }
     }
@@ -110,6 +108,7 @@ private fun LegalAndDataSection(application: DrRrpApplication, patientId: String
         LegalTextDialog(
             title = "Privacy Policy",
             text = LegalLinks.PRIVACY_POLICY_TEXT,
+            url = LegalLinks.PRIVACY_POLICY_URL,
             onDismiss = { showPrivacyDialog = false },
         )
     }
@@ -118,6 +117,7 @@ private fun LegalAndDataSection(application: DrRrpApplication, patientId: String
         LegalTextDialog(
             title = "Terms & Conditions",
             text = LegalLinks.TERMS_TEXT,
+            url = LegalLinks.TERMS_URL,
             onDismiss = { showTermsDialog = false },
         )
     }

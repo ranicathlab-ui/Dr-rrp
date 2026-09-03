@@ -51,7 +51,6 @@ import com.postpci.drrrp.ui.theme.appBackground
  */
 @Composable
 fun DisclaimerScreen(application: DrRrpApplication, onAcknowledged: () -> Unit) {
-    val context = LocalContext.current
     var checked by remember { mutableStateOf(false) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
     var showTermsDialog by remember { mutableStateOf(false) }
@@ -123,10 +122,10 @@ fun DisclaimerScreen(application: DrRrpApplication, onAcknowledged: () -> Unit) 
         }
 
         Row(modifier = Modifier.padding(top = 4.dp)) {
-            TextButton(onClick = { openLegalLink(context, LegalLinks.PRIVACY_POLICY_URL) { showPrivacyDialog = true } }) {
+            TextButton(onClick = { showPrivacyDialog = true }) {
                 Text("Privacy Policy", color = AccentYellowGold, style = MaterialTheme.typography.bodySmall)
             }
-            TextButton(onClick = { openLegalLink(context, LegalLinks.TERMS_URL) { showTermsDialog = true } }) {
+            TextButton(onClick = { showTermsDialog = true }) {
                 Text("Terms & Conditions", color = AccentYellowGold, style = MaterialTheme.typography.bodySmall)
             }
         }
@@ -146,6 +145,7 @@ fun DisclaimerScreen(application: DrRrpApplication, onAcknowledged: () -> Unit) 
         LegalTextDialog(
             title = "Privacy Policy",
             text = LegalLinks.PRIVACY_POLICY_TEXT,
+            url = LegalLinks.PRIVACY_POLICY_URL,
             onDismiss = { showPrivacyDialog = false },
         )
     }
@@ -154,24 +154,15 @@ fun DisclaimerScreen(application: DrRrpApplication, onAcknowledged: () -> Unit) 
         LegalTextDialog(
             title = "Terms & Conditions",
             text = LegalLinks.TERMS_TEXT,
+            url = LegalLinks.TERMS_URL,
             onDismiss = { showTermsDialog = false },
         )
     }
 }
 
-fun openLegalLink(context: Context, url: String, onError: () -> Unit) {
-    try {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        context.startActivity(intent)
-    } catch (e: Exception) {
-        onError()
-    }
-}
-
 @Composable
-fun LegalTextDialog(title: String, text: String, onDismiss: () -> Unit) {
+fun LegalTextDialog(title: String, text: String, url: String? = null, onDismiss: () -> Unit) {
+    val context = LocalContext.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title, color = AccentYellowGold, fontWeight = FontWeight.Bold) },
@@ -186,8 +177,22 @@ fun LegalTextDialog(title: String, text: String, onDismiss: () -> Unit) {
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close", color = AccentYellowGold)
+            Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                if (!url.isNullOrBlank()) {
+                    TextButton(onClick = {
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(intent)
+                        } catch (_: Exception) {}
+                    }) {
+                        Text("Open web link", color = TextSecondary)
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text("Close", color = AccentYellowGold)
+                }
             }
         },
         containerColor = SurfaceCard,
