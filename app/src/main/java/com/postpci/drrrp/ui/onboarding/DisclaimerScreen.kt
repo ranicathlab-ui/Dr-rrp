@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.dp
 import com.postpci.drrrp.DrRrpApplication
 import com.postpci.drrrp.data.alert.ClinicContact
 import com.postpci.drrrp.data.alert.LegalLinks
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import com.postpci.drrrp.ui.theme.AccentYellowGold
 import com.postpci.drrrp.ui.theme.AlertRed
 import com.postpci.drrrp.ui.theme.BorderHairline
@@ -58,6 +60,8 @@ fun DisclaimerScreen(application: DrRrpApplication, onAcknowledged: () -> Unit) 
     Column(
         modifier = Modifier
             .appBackground()
+            .statusBarsPadding()
+            .navigationBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
     ) {

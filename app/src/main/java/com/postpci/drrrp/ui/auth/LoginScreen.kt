@@ -38,6 +38,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.postpci.drrrp.DrRrpApplication
 import com.postpci.drrrp.ui.common.bringIntoViewOnFocus
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import com.postpci.drrrp.ui.theme.AccentYellowGold
 import com.postpci.drrrp.ui.theme.AlertRed
 import com.postpci.drrrp.ui.theme.BorderHairline
@@ -58,6 +60,8 @@ fun LoginScreen(application: DrRrpApplication, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .appBackground()
+            .statusBarsPadding()
+            .navigationBarsPadding()
             .verticalScroll(rememberScrollState())
             .imePadding()
             .padding(24.dp),
