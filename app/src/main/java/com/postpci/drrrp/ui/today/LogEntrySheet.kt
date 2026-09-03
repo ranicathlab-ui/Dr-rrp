@@ -27,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.postpci.drrrp.ui.common.bringIntoViewOnFocus
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -139,7 +140,7 @@ private fun HeartRateEntry(todayEntry: DailyEntryEntity?, viewModel: TodayViewMo
         label = { Text("Heart rate (bpm)") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         colors = numberFieldColors(),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocus(),
     )
     if (value != null && !isValidRange) {
         InlineValidationWarning("Enter a valid heart rate between 30 and 250 bpm.")
@@ -165,7 +166,7 @@ private fun BloodPressureEntry(todayEntry: DailyEntryEntity?, viewModel: TodayVi
         label = { Text("Systolic (mmHg)") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         colors = numberFieldColors(),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocus(),
     )
     OutlinedTextField(
         value = diastolic,
@@ -173,7 +174,7 @@ private fun BloodPressureEntry(todayEntry: DailyEntryEntity?, viewModel: TodayVi
         label = { Text("Diastolic (mmHg)") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         colors = numberFieldColors(),
-        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp).bringIntoViewOnFocus(),
     )
     if (sys != null && !sysValid) InlineValidationWarning("Systolic must be between 50 and 300 mmHg.")
     if (dia != null && !diaValid) InlineValidationWarning("Diastolic must be between 30 and 200 mmHg.")
@@ -194,7 +195,7 @@ private fun Spo2Entry(todayEntry: DailyEntryEntity?, viewModel: TodayViewModel, 
         label = { Text("SpO2 (%)") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         colors = numberFieldColors(),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocus(),
     )
     if (value != null && !isValid) InlineValidationWarning("SpO2 must be between 50% and 100%.")
     InlineFlag(if (isValid) AlertRules.checkSpo2(value!!)?.message else null)
@@ -212,7 +213,7 @@ private fun WeightEntry(todayEntry: DailyEntryEntity?, viewModel: TodayViewModel
         label = { Text("Weight (kg)") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         colors = numberFieldColors(),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocus(),
     )
     if (value != null && !isValid) InlineValidationWarning("Weight must be between 20 kg and 300 kg.")
     Text(
@@ -249,7 +250,7 @@ private fun ChestPainEntry(todayEntry: DailyEntryEntity?, viewModel: TodayViewMo
         label = { Text("Episodes today") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         colors = numberFieldColors(),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocus(),
     )
     Row(modifier = Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         ChipChoice("At rest", type == ChestPainType.REST) { type = ChestPainType.REST }
@@ -271,7 +272,7 @@ private fun ActivityEntry(todayEntry: DailyEntryEntity?, viewModel: TodayViewMod
         label = { Text("Steps or minutes walked") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         colors = numberFieldColors(),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocus(),
     )
     if (minutes != null && !isValid) InlineValidationWarning("Minutes walked must be between 0 and 1440.")
     OutlinedTextField(
@@ -279,7 +280,7 @@ private fun ActivityEntry(todayEntry: DailyEntryEntity?, viewModel: TodayViewMod
         onValueChange = { symptom = it },
         label = { Text("Symptom that stopped activity (optional)") },
         colors = numberFieldColors(),
-        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp).bringIntoViewOnFocus(),
     )
     SaveButton(enabled = isValid) {
         viewModel.submitActivity(minutes!!, symptom.ifBlank { null })

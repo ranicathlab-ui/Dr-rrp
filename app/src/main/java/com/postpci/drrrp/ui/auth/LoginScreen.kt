@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -34,6 +37,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.postpci.drrrp.DrRrpApplication
+import com.postpci.drrrp.ui.common.bringIntoViewOnFocus
 import com.postpci.drrrp.ui.theme.AccentYellowGold
 import com.postpci.drrrp.ui.theme.AlertRed
 import com.postpci.drrrp.ui.theme.BorderHairline
@@ -54,6 +58,8 @@ fun LoginScreen(application: DrRrpApplication, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .appBackground()
+            .verticalScroll(rememberScrollState())
+            .imePadding()
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
     ) {
@@ -142,7 +148,7 @@ private fun SignInForm(viewModel: LoginViewModel, email: String, password: Strin
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
         colors = drrrpTextFieldColors(),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocus(),
     )
     OutlinedTextField(
         value = password,
@@ -152,7 +158,7 @@ private fun SignInForm(viewModel: LoginViewModel, email: String, password: Strin
         visualTransformation = PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         colors = drrrpTextFieldColors(),
-        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp).bringIntoViewOnFocus(),
     )
     Button(
         onClick = viewModel::submitSignIn,
@@ -201,7 +207,7 @@ private fun FirstLoginSetupForm(
         visualTransformation = PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         colors = drrrpTextFieldColors(),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().bringIntoViewOnFocus(),
     )
     OutlinedTextField(
         value = confirmPassword,
@@ -211,7 +217,7 @@ private fun FirstLoginSetupForm(
         visualTransformation = PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         colors = drrrpTextFieldColors(),
-        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp).bringIntoViewOnFocus(),
     )
     Button(
         onClick = viewModel::submitFirstLoginSetup,

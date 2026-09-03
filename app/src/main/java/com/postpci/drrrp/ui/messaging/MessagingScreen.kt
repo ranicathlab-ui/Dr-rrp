@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import com.postpci.drrrp.ui.common.bringIntoViewOnFocus
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -83,7 +85,7 @@ fun MessagingScreen(
     }
 
     DrRrpScaffold(title = "Messages", showBackButton = true, onBack = onBack) { modifier ->
-        Column(modifier = modifier.fillMaxSize()) {
+        Column(modifier = modifier.fillMaxSize().imePadding()) {
             if (messages.isEmpty()) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Text("No messages yet — say hello.", color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
@@ -119,7 +121,7 @@ fun MessagingScreen(
                     onValueChange = { draft = it },
                     placeholder = { Text("Type a message…") },
                     colors = drrrpFieldColors(),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).bringIntoViewOnFocus(),
                 )
                 IconButton(onClick = { viewModel.send(draft); draft = "" }) {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = AccentYellowGold)

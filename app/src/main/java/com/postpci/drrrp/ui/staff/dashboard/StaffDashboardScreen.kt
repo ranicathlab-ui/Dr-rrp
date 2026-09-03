@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -37,6 +38,7 @@ import com.postpci.drrrp.DrRrpApplication
 import com.postpci.drrrp.data.model.AlertSeverity
 import com.postpci.drrrp.ui.common.DrRrpScaffold
 import com.postpci.drrrp.ui.common.drrrpFieldColors
+import com.postpci.drrrp.ui.common.bringIntoViewOnFocus
 import com.postpci.drrrp.ui.theme.AccentYellowGold
 import com.postpci.drrrp.ui.theme.AlertRed
 import com.postpci.drrrp.ui.theme.BorderHairline
@@ -70,14 +72,14 @@ fun StaffDashboardScreen(
             }
         },
     ) { modifier ->
-        Column(modifier = modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+        Column(modifier = modifier.padding(horizontal = 20.dp, vertical = 12.dp).imePadding()) {
             OutlinedTextField(
                 value = state.searchQuery,
                 onValueChange = viewModel::onSearchChange,
                 label = { Text("Search patients") },
                 singleLine = true,
                 colors = drrrpFieldColors(),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().bringIntoViewOnFocus(),
             )
             Row(modifier = Modifier.padding(top = 10.dp, bottom = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 AlertStatusFilter.entries.forEach { filter ->

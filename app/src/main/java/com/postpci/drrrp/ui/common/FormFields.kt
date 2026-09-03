@@ -44,6 +44,11 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import kotlinx.coroutines.launch
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.runtime.LaunchedEffect
+
 /**
  * Shared, terse building blocks for the staff baseline wizard's ~60 fields — every step composes
  * these rather than hand-rolling a TextField per field. Kept in `ui.common` since the Log Entry
@@ -75,13 +80,31 @@ fun drrrpFieldColors() = OutlinedTextFieldDefaults.colors(
  * `requestRectangleOnScreen` — Compose has no such automatic behavior, so every field has to ask
  * for it explicitly.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Modifier.bringIntoViewOnFocus(): Modifier {
+fun Modifier.bringIntoViewOnFocus(): Modifier {
     val requester = remember { BringIntoViewRequester() }
     val scope = rememberCoroutineScope()
+    var isFocused by remember { mutableStateOf(false) }
+    val isImeVisible = WindowInsets.isImeVisible
+
+    LaunchedEffect(isFocused, isImeVisible) {
+        if (isFocused) {
+            kotlinx.coroutines.delay(100L)
+            requester.bringIntoView()
+        }
+    }
+
     return this
         .bringIntoViewRequester(requester)
-        .onFocusEvent { if (it.isFocused) scope.launch { requester.bringIntoView() } }
+        .onFocusEvent {
+            isFocused = it.isFocused
+            if (it.isFocused) {
+                scope.launch {
+                    requester.bringIntoView()
+                }
+            }
+        }
 }
 
 @Composable
