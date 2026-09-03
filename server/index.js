@@ -175,8 +175,7 @@ const PRIVACY_POLICY_HTML = `<!DOCTYPE html>
     <div class="contact-box">
       <strong>Aasai Health Centre</strong><br>
       Salem, Tamil Nadu, India<br>
-      <strong>Director:</strong> Dr. A. Rajaram Prasad<br>
-      <strong>Phone:</strong> +91 98941 84664
+      <strong>Director:</strong> Dr. A. Rajaram Prasad
     </div>
   </div>
 </body>
@@ -225,8 +224,7 @@ const TERMS_HTML = `<!DOCTYPE html>
     <div class="contact-box">
       <strong>Aasai Health Centre</strong><br>
       Salem, Tamil Nadu, India<br>
-      <strong>Director:</strong> Dr. A. Rajaram Prasad<br>
-      <strong>Phone:</strong> +91 98941 84664
+      <strong>Director:</strong> Dr. A. Rajaram Prasad
     </div>
   </div>
 </body>

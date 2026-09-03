@@ -37,8 +37,7 @@ Patients have the right to request complete deletion of their account and health
 
 Aasai Health Centre
 Salem, Tamil Nadu, India
-Director: Dr. A. Rajaram Prasad
-Phone: +91 98941 84664"""
+Director: Dr. A. Rajaram Prasad"""
 
     const val TERMS_TEXT = """DR RRP — Terms & Conditions
 Aasai Health Centre, Salem, Tamil Nadu, India (Dr. A. Rajaram Prasad)
@@ -60,6 +59,5 @@ Aasai Health Centre reserves the right to update these terms to reflect medical,
 
 Aasai Health Centre
 Salem, Tamil Nadu, India
-Director: Dr. A. Rajaram Prasad
-Phone: +91 98941 84664"""
+Director: Dr. A. Rajaram Prasad"""
 }
