@@ -119,6 +119,129 @@ app.use(express.json({ limit: "1mb" }));
 
 app.get("/health", (req, res) => res.status(200).json({ ok: true }));
 
+const PRIVACY_POLICY_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — DR RRP</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #0C1322; color: #E1E7EF; line-height: 1.6; margin: 0; padding: 24px 16px; }
+    .container { max-width: 800px; margin: 0 auto; background-color: #141D30; padding: 32px; border-radius: 16px; border: 1px solid #2A364F; }
+    h1 { color: #F5C518; margin-top: 0; font-size: 28px; }
+    h2 { color: #F5C518; font-size: 20px; border-bottom: 1px solid #2A364F; padding-bottom: 8px; margin-top: 28px; }
+    p, li { color: #C0CADA; font-size: 15px; }
+    ul { padding-left: 20px; }
+    .contact-box { background-color: #1C273E; border-left: 4px solid #F5C518; padding: 16px; border-radius: 8px; margin-top: 24px; }
+    a { color: #F5C518; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Privacy Policy — DR RRP</h1>
+    <p><strong>Aasai Health Centre, Salem, Tamil Nadu, India</strong><br>Effective Date: September 2026</p>
+
+    <h2>1. Introduction</h2>
+    <p>DR RRP ("the Application") is a cardiac post-procedure recovery monitoring system developed for Aasai Health Centre, Salem, India, under Dr. A. Rajaram Prasad. We are committed to protecting the privacy, confidentiality, and security of patient health data.</p>
+
+    <h2>2. Information We Collect</h2>
+    <p>The Application collects only the health and personal information required to facilitate post-PCI (angioplasty) recovery monitoring:</p>
+    <ul>
+      <li><strong>Patient Demographics:</strong> Name, age, sex, contact number, comorbidities, and home medications.</li>
+      <li><strong>Clinical Baseline Data:</strong> Procedural details (PCI date, stent specifications, STEMI territory), laboratory values, discharge vitals, and medication regimens.</li>
+      <li><strong>Daily Recovery Logs:</strong> Resting heart rate, blood pressure, SpO2, body weight, chest pain episodes, breathlessness levels, access-site status, activity levels, and medication adherence.</li>
+      <li><strong>Communication & Chat Data:</strong> Direct in-app messages between patients/caregivers and clinic staff.</li>
+    </ul>
+
+    <h2>3. How We Use Your Information</h2>
+    <p>Your information is used solely for clinical follow-up and patient care:</p>
+    <ul>
+      <li>To monitor post-procedure recovery and identify out-of-range vitals or symptoms requiring medical attention.</li>
+      <li>To enable direct communication between patients, caregivers, and authorized cardiology staff at Aasai Health Centre.</li>
+      <li>To send automated alert notifications regarding recovery milestones and vital checks.</li>
+    </ul>
+
+    <h2>4. Data Storage & Security</h2>
+    <p>We enforce strict technical and organizational safeguards to protect health data:</p>
+    <ul>
+      <li>On-device data is encrypted at rest using AES-256 SQLCipher encryption.</li>
+      <li>Data in transit is encrypted using Secure Sockets Layer / Transport Layer Security (TLS/HTTPS).</li>
+      <li>Role-based access control ensures patient health data is accessible only by authorized clinical staff and linked caregivers.</li>
+    </ul>
+
+    <h2>5. Data Deletion & Patient Rights</h2>
+    <p>Patients have the right to request complete deletion of their account and health data at any time. Data deletion requests can be initiated directly within the Profile section of the Application or by contacting Aasai Health Centre.</p>
+
+    <div class="contact-box">
+      <strong>Aasai Health Centre</strong><br>
+      Salem, Tamil Nadu, India<br>
+      <strong>Director:</strong> Dr. A. Rajaram Prasad<br>
+      <strong>Phone:</strong> +91 98941 84664
+    </div>
+  </div>
+</body>
+</html>`;
+
+const TERMS_HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms & Conditions — DR RRP</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #0C1322; color: #E1E7EF; line-height: 1.6; margin: 0; padding: 24px 16px; }
+    .container { max-width: 800px; margin: 0 auto; background-color: #141D30; padding: 32px; border-radius: 16px; border: 1px solid #2A364F; }
+    h1 { color: #F5C518; margin-top: 0; font-size: 28px; }
+    h2 { color: #F5C518; font-size: 20px; border-bottom: 1px solid #2A364F; padding-bottom: 8px; margin-top: 28px; }
+    p, li { color: #C0CADA; font-size: 15px; }
+    ul { padding-left: 20px; }
+    .alert-box { background-color: rgba(229, 57, 53, 0.15); border-left: 4px solid #E53935; padding: 16px; border-radius: 8px; margin-top: 20px; color: #FFCDD2; }
+    .contact-box { background-color: #1C273E; border-left: 4px solid #F5C518; padding: 16px; border-radius: 8px; margin-top: 24px; }
+    a { color: #F5C518; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Terms & Conditions — DR RRP</h1>
+    <p><strong>Aasai Health Centre, Salem, Tamil Nadu, India</strong><br>Effective Date: September 2026</p>
+
+    <h2>1. Acceptance of Terms</h2>
+    <p>By registering or using the DR RRP application ("the Application"), you agree to comply with these Terms & Conditions. If you do not agree, please do not use the Application.</p>
+
+    <h2>2. Medical Disclaimer — Not an Emergency Response System</h2>
+    <div class="alert-box">
+      <strong>CRITICAL NOTICE:</strong> DR RRP is a recovery monitoring and follow-up communication tool. It is NOT an automated real-time emergency dispatch or emergency triage system. If you experience severe chest pain, extreme breathlessness, or loss of consciousness, CALL EMERGENCY SERVICES (108) OR GO TO THE NEAREST HOSPITAL IMMEDIATELY.
+    </div>
+
+    <h2>3. Intended Use</h2>
+    <p>The Application is designed exclusively for post-PCI (angioplasty) patients under the care of Aasai Health Centre, Salem. It facilitates routine recovery tracking, vital log entries, and non-emergency communication with clinical staff.</p>
+
+    <h2>4. Account Confidentiality</h2>
+    <p>Users are responsible for maintaining the confidentiality of their login credentials. Any activity conducted under a user's account is their responsibility.</p>
+
+    <h2>5. Revisions to Terms</h2>
+    <p>Aasai Health Centre reserves the right to update these terms to reflect medical, legal, or technological improvements. Continued use of the Application constitutes acceptance of revised terms.</p>
+
+    <div class="contact-box">
+      <strong>Aasai Health Centre</strong><br>
+      Salem, Tamil Nadu, India<br>
+      <strong>Director:</strong> Dr. A. Rajaram Prasad<br>
+      <strong>Phone:</strong> +91 98941 84664
+    </div>
+  </div>
+</body>
+</html>`;
+
+app.get("/privacy-policy", (req, res) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.status(200).send(PRIVACY_POLICY_HTML);
+});
+
+app.get("/terms", (req, res) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.status(200).send(TERMS_HTML);
+});
+
 // Registered before authenticate: this is hit by an external cron service, not a signed-in
 // Firebase user — it has its own shared-secret check instead (see the handler below).
 app.post("/internal/check-missed-entries", asyncHandler(async (req, res) => {

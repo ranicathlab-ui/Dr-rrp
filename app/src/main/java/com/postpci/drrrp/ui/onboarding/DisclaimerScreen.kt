@@ -1,5 +1,6 @@
 package com.postpci.drrrp.ui.onboarding
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -51,6 +53,8 @@ import com.postpci.drrrp.ui.theme.appBackground
 fun DisclaimerScreen(application: DrRrpApplication, onAcknowledged: () -> Unit) {
     val context = LocalContext.current
     var checked by remember { mutableStateOf(false) }
+    var showPrivacyDialog by remember { mutableStateOf(false) }
+    var showTermsDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -119,10 +123,10 @@ fun DisclaimerScreen(application: DrRrpApplication, onAcknowledged: () -> Unit) 
         }
 
         Row(modifier = Modifier.padding(top = 4.dp)) {
-            TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(LegalLinks.PRIVACY_POLICY_URL))) }) {
+            TextButton(onClick = { openLegalLink(context, LegalLinks.PRIVACY_POLICY_URL) { showPrivacyDialog = true } }) {
                 Text("Privacy Policy", color = AccentYellowGold, style = MaterialTheme.typography.bodySmall)
             }
-            TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(LegalLinks.TERMS_URL))) }) {
+            TextButton(onClick = { openLegalLink(context, LegalLinks.TERMS_URL) { showTermsDialog = true } }) {
                 Text("Terms & Conditions", color = AccentYellowGold, style = MaterialTheme.typography.bodySmall)
             }
         }
@@ -137,6 +141,57 @@ fun DisclaimerScreen(application: DrRrpApplication, onAcknowledged: () -> Unit) 
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         ) { Text("I understand, continue", fontWeight = FontWeight.Bold) }
     }
+
+    if (showPrivacyDialog) {
+        LegalTextDialog(
+            title = "Privacy Policy",
+            text = LegalLinks.PRIVACY_POLICY_TEXT,
+            onDismiss = { showPrivacyDialog = false },
+        )
+    }
+
+    if (showTermsDialog) {
+        LegalTextDialog(
+            title = "Terms & Conditions",
+            text = LegalLinks.TERMS_TEXT,
+            onDismiss = { showTermsDialog = false },
+        )
+    }
+}
+
+fun openLegalLink(context: Context, url: String, onError: () -> Unit) {
+    try {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        onError()
+    }
+}
+
+@Composable
+fun LegalTextDialog(title: String, text: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title, color = AccentYellowGold, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 8.dp),
+            ) {
+                Text(text, color = TextPrimary, style = MaterialTheme.typography.bodyMedium)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close", color = AccentYellowGold)
+            }
+        },
+        containerColor = SurfaceCard,
+    )
 }
 
 @Composable

@@ -28,6 +28,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import com.postpci.drrrp.ui.onboarding.LegalTextDialog
+import com.postpci.drrrp.ui.onboarding.openLegalLink
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -92,14 +94,32 @@ private fun LegalAndDataSection(application: DrRrpApplication, patientId: String
     val scope = rememberCoroutineScope()
     var showConfirmDialog by remember { mutableStateOf(false) }
     var requestSent by remember { mutableStateOf(false) }
+    var showPrivacyDialog by remember { mutableStateOf(false) }
+    var showTermsDialog by remember { mutableStateOf(false) }
 
     SectionCard("Legal") {
-        TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(LegalLinks.PRIVACY_POLICY_URL))) }) {
+        TextButton(onClick = { openLegalLink(context, LegalLinks.PRIVACY_POLICY_URL) { showPrivacyDialog = true } }) {
             Text("Privacy Policy", color = AccentYellowGold)
         }
-        TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(LegalLinks.TERMS_URL))) }) {
+        TextButton(onClick = { openLegalLink(context, LegalLinks.TERMS_URL) { showTermsDialog = true } }) {
             Text("Terms & Conditions", color = AccentYellowGold)
         }
+    }
+
+    if (showPrivacyDialog) {
+        LegalTextDialog(
+            title = "Privacy Policy",
+            text = LegalLinks.PRIVACY_POLICY_TEXT,
+            onDismiss = { showPrivacyDialog = false },
+        )
+    }
+
+    if (showTermsDialog) {
+        LegalTextDialog(
+            title = "Terms & Conditions",
+            text = LegalLinks.TERMS_TEXT,
+            onDismiss = { showTermsDialog = false },
+        )
     }
 
     Column(
