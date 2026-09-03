@@ -260,11 +260,10 @@ app.post("/internal/check-missed-entries", asyncHandler(async (req, res) => {
     const dueToday = monitoringSchedule.dueFieldsFor(pciDate, today);
     if (dueToday.length === 0) continue;
 
-    const latestSnap = await doc.ref.collection("entries").orderBy("entryDate", "desc").limit(1).get();
-    const latestDate = latestSnap.empty ? null : latestSnap.docs[0].data().entryDate;
-    if (latestDate && latestDate >= today) continue;
+    const entriesSnap = await doc.ref.collection("entries").where("entryDate", "==", today).get();
+    if (!entriesSnap.empty) continue; // Patient already completed mandatory check-in (submission_count >= 1)
 
-    const draft = { fieldKey: `missed:${dueToday.join(",")}`, severity: "INFO", message: "No entry logged today for one or more due readings.", normalRangeText: null };
+    const draft = { fieldKey: `missed:${dueToday.join(",")}`, severity: "INFO", message: "You haven’t completed your daily check-in yet. Please log your vitals today.", normalRangeText: null };
     await createAlertIfAbsentAndPush(doc.id, `missed_${today}`, draft, "MISSED_ENTRY", null);
     flagged++;
   }
@@ -484,6 +483,49 @@ app.get("/patient/:patientId", asyncHandler(async (req, res) => {
   });
 }));
 
+app.delete("/patient/:patientId", asyncHandler(async (req, res) => {
+  if (req.role !== "STAFF") return res.status(403).json({ error: "Only staff can delete patient records." });
+  const patientId = req.params.patientId;
+  const firestore = getFirestore();
+
+  // 1. Delete patient document from 'patients' collection and subcollections
+  const patientRef = firestore.collection(PATIENTS).doc(patientId);
+  const subcollections = ["entries", "alerts", "bleedingEvents", "messages"];
+  for (const sub of subcollections) {
+    try {
+      const snap = await patientRef.collection(sub).get();
+      const batch = firestore.batch();
+      snap.docs.forEach((doc) => batch.delete(doc.ref));
+      if (!snap.empty) await batch.commit();
+    } catch (_e) {}
+  }
+  await patientRef.delete();
+
+  // 2. Invalidate patient login access & remove user document
+  try {
+    await getAuth().updateUser(patientId, { disabled: true });
+  } catch (_e) {}
+  try {
+    await firestore.collection(USERS_COLLECTION).doc(patientId).delete();
+  } catch (_e) {}
+
+  // 3. Invalidate linked caregiver accounts
+  try {
+    const caregiversSnap = await firestore.collection(USERS_COLLECTION)
+      .where("role", "==", "CAREGIVER")
+      .where("linkedPatientId", "==", patientId)
+      .get();
+    for (const cDoc of caregiversSnap.docs) {
+      try {
+        await getAuth().updateUser(cDoc.id, { disabled: true });
+      } catch (_e) {}
+      await cDoc.ref.delete();
+    }
+  } catch (_e) {}
+
+  res.status(200).json({ ok: true });
+}));
+
 app.get("/staff/patients", asyncHandler(async (req, res) => {
   if (req.role !== "STAFF") return res.status(403).json({ error: "Staff only." });
   const search = (req.query.search || "").toString().toLowerCase();
@@ -503,9 +545,8 @@ app.get("/staff/patients", asyncHandler(async (req, res) => {
       if (pciDate) {
         const dueToday = monitoringSchedule.dueFieldsFor(pciDate, today);
         if (dueToday.length > 0) {
-          const latestSnap = await doc.ref.collection("entries").orderBy("entryDate", "desc").limit(1).get();
-          const latestDate = latestSnap.empty ? null : latestSnap.docs[0].data().entryDate;
-          hasMissedEntry = !latestDate || latestDate < today;
+          const entriesSnap = await doc.ref.collection("entries").where("entryDate", "==", today).get();
+          hasMissedEntry = entriesSnap.empty; // true if 0 submissions today
         }
       }
 

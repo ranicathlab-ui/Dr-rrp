@@ -2,6 +2,8 @@ package com.postpci.drrrp.ui.today
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
+import com.postpci.drrrp.data.local.entity.isAnyFieldLogged
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -23,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -143,6 +146,53 @@ fun TodayScreen(
                 }
             }
 
+            val isMandatoryMet = state.todayEntry?.isAnyFieldLogged() == true
+
+            // Mandatory Daily Compliance Badge
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+                    .background(
+                        if (isMandatoryMet) AccentYellowGold.copy(alpha = 0.12f) else AlertRed.copy(alpha = 0.10f),
+                        RoundedCornerShape(12.dp),
+                    )
+                    .border(
+                        1.dp,
+                        if (isMandatoryMet) AccentYellowGold else AlertRed,
+                        RoundedCornerShape(12.dp),
+                    )
+                    .padding(14.dp),
+            ) {
+                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = if (isMandatoryMet) "Daily Compliance: Completed ✓" else "Daily Compliance: Pending ✗",
+                            color = if (isMandatoryMet) AccentYellowGold else AlertRed,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        if (isMandatoryMet) {
+                            Text("Mandatory Met", color = AccentYellowGold, style = MaterialTheme.typography.labelSmall, fontFamily = IBMPlexMono)
+                        }
+                    }
+                    Text(
+                        text = if (isMandatoryMet) {
+                            "You have completed your mandatory check-in for today. You can log additional follow-up vitals at any time."
+                        } else {
+                            "At least one daily vital sign check-in is required today. Please log your vitals."
+                        },
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
+
             Text(
                 "Today's check-in",
                 style = MaterialTheme.typography.titleLarge,
@@ -171,32 +221,90 @@ fun TodayScreen(
 
             if (canLogEntries) {
                 var finished by remember { mutableStateOf(false) }
-                Button(
-                    onClick = { finished = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentYellowGold, contentColor = Color(0xFF241A00)),
-                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 8.dp),
+                var showSuccessDialog by remember { mutableStateOf(false) }
+
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("Finish today's check-in", fontWeight = FontWeight.Bold)
+                    if (isMandatoryMet) {
+                        Button(
+                            onClick = {
+                                Toast.makeText(context, "Select any vital card above to log additional vitals.", Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = SurfaceCard, contentColor = AccentYellowGold),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("+ Log Additional Vitals", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Button(
+                        onClick = {
+                            Toast.makeText(context, "Vitals recorded successfully", Toast.LENGTH_SHORT).show()
+                            viewModel.finishCheckIn {
+                                showSuccessDialog = true
+                                finished = true
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentYellowGold, contentColor = Color(0xFF241A00)),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(if (isMandatoryMet) "Submit Follow-up Entry" else "Finish today's check-in", fontWeight = FontWeight.Bold)
+                    }
                 }
+
+                if (showSuccessDialog) {
+                    val unloggedFields = state.dueFields.filter { !isFieldLogged(it, state.todayEntry) }
+                    AlertDialog(
+                        onDismissRequest = { showSuccessDialog = false },
+                        title = {
+                            Text(
+                                text = "Vitals Recorded Successfully ✓",
+                                color = AccentYellowGold,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        },
+                        text = {
+                            if (unloggedFields.isEmpty()) {
+                                Text(
+                                    "All done for today! Your vital signs and daily check-in details have been recorded and submitted to Aasai Health Centre.",
+                                    color = TextPrimary,
+                                )
+                            } else {
+                                val unloggedLabels = unloggedFields.map { fieldMetaByKey[it]?.label ?: it }.joinToString(", ")
+                                Text(
+                                    "Your vitals have been recorded and submitted to Aasai Health Centre.\n\nNote: ${unloggedFields.size} field(s) still pending today: $unloggedLabels\n\nSubsequent follow-up entries later in the day are optional.",
+                                    color = TextPrimary,
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showSuccessDialog = false }) {
+                                Text("Done", color = AccentYellowGold, fontWeight = FontWeight.Bold)
+                            }
+                        },
+                        containerColor = SurfaceCard,
+                    )
+                }
+
                 AnimatedVisibility(
-                    visible = finished,
+                    visible = finished || isMandatoryMet,
                     enter = fadeIn() + expandVertically(),
                     exit = fadeOut() + shrinkVertically(),
                 ) {
-                    val unloggedFields = state.dueFields.filter { !isFieldLogged(it, state.todayEntry) }
-                    if (unloggedFields.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                            .background(AccentYellowGold.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+                            .border(1.dp, AccentYellowGold, RoundedCornerShape(12.dp))
+                            .padding(12.dp),
+                    ) {
                         Text(
-                            text = "All done for today — thank you!",
+                            text = "✓ Vitals recorded successfully — mandatory daily check-in met!",
                             color = AccentYellowGold,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
-                        )
-                    } else {
-                        val unloggedLabels = unloggedFields.map { fieldMetaByKey[it]?.label ?: it }.joinToString(", ")
-                        Text(
-                            text = "${unloggedFields.size} field(s) still need logging today: $unloggedLabels",
-                            color = TextSecondary,
-                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                 }

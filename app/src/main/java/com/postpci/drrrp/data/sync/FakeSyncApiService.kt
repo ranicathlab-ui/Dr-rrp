@@ -70,4 +70,8 @@ class FakeSyncApiService : SyncApiService {
     override suspend fun setCaregiverPermission(caregiverId: String, body: SetCaregiverPermissionRequest) {
         delay(300)
     }
+
+    override suspend fun deletePatient(patientId: String) {
+        delay(300)
+    }
 }

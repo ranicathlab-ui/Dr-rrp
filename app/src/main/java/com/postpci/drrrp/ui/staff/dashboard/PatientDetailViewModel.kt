@@ -110,4 +110,15 @@ class PatientDetailViewModel(
             }
         }
     }
+
+    fun deletePatient(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                syncManager.deletePatient(patientId)
+            } catch (_: Exception) {
+                // Best-effort
+            }
+            onSuccess()
+        }
+    }
 }

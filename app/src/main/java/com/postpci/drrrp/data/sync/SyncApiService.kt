@@ -11,6 +11,7 @@ import com.postpci.drrrp.data.sync.dto.PatientDetailResponse
 import com.postpci.drrrp.data.sync.dto.PatientListItemDto
 import com.postpci.drrrp.data.sync.dto.SetCaregiverPermissionRequest
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PUT
 import retrofit2.http.POST
@@ -52,6 +53,9 @@ interface SyncApiService {
 
     @GET("staff/patients")
     suspend fun getStaffPatients(@Query("search") search: String? = null, @Query("sort") sort: String? = null): List<PatientListItemDto>
+
+    @DELETE("patient/{patientId}")
+    suspend fun deletePatient(@Path("patientId") patientId: String)
 
     /** Not in the original spec's endpoint list — needed so staff can actually see and manage a
      *  patient's linked caregiver(s) (in particular, toggle canLogEntries), which was previously

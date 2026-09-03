@@ -61,3 +61,17 @@ data class DailyEntryEntity(
     val updatedAt: Long,
     val syncStatus: SyncStatus = SyncStatus.PENDING,
 )
+
+fun DailyEntryEntity.isAnyFieldLogged(): Boolean {
+    return restingHeartRate != null ||
+        (bpSystolic != null && bpDiastolic != null) ||
+        spo2 != null ||
+        weightKg != null ||
+        (accessSiteBleeding != null || accessSiteSwelling != null || accessSitePain != null || accessSiteDiscolouration != null) ||
+        chestPainCount != null ||
+        stepsOrMinutesWalked != null ||
+        (palpitations != null || syncope != null || nearSyncope != null) ||
+        nyhaClass != null ||
+        daptTaken != null ||
+        !medicationsTaken.isNullOrBlank()
+}

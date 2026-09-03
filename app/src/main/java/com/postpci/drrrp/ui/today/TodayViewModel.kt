@@ -110,6 +110,17 @@ class TodayViewModel(
     fun submitBreathlessness(nyha: NyhaClass) =
         launchSave { repository.saveBreathlessness(patientId, nyha, loggedByCaregiver) }
 
+    fun finishCheckIn(onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                syncManager.syncAll()
+            } catch (_: Exception) {
+                // Best-effort offline push
+            }
+            onComplete()
+        }
+    }
+
     private fun launchSave(block: suspend () -> Unit) {
         viewModelScope.launch { block() }
     }

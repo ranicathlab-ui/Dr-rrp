@@ -14,15 +14,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import android.widget.Toast
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.postpci.drrrp.data.local.entity.isAnyFieldLogged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -69,6 +79,7 @@ fun PatientDetailScreen(
     )
     val baseline by viewModel.baseline.collectAsState()
     val context = LocalContext.current
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     DrRrpScaffold(title = baseline?.demographics?.name ?: "Patient", showBackButton = true, onBack = onBack) { modifier ->
         val b = baseline
@@ -110,17 +121,51 @@ fun PatientDetailScreen(
                         ) { Text("Call patient") }
                         OutlinedButton(onClick = onSendMessage) { Text("Send message", color = TextPrimary) }
                     }
-                    OutlinedButton(onClick = onEditBaseline, modifier = Modifier.padding(top = 10.dp)) {
-                        Text("Edit baseline", color = TextPrimary)
+                    Row(modifier = Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedButton(onClick = onEditBaseline) {
+                            Text("Edit baseline", color = TextPrimary)
+                        }
+                        OutlinedButton(onClick = onAddCaregiver) {
+                            Text("Add caregiver", color = TextPrimary)
+                        }
                     }
-                    OutlinedButton(onClick = onAddCaregiver, modifier = Modifier.padding(top = 10.dp)) {
-                        Text("Add caregiver", color = TextPrimary)
+                    OutlinedButton(
+                        onClick = { showDeleteDialog = true },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AlertRed),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, AlertRed),
+                        modifier = Modifier.padding(top = 10.dp),
+                    ) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Delete Patient Record", tint = AlertRed, modifier = Modifier.padding(end = 6.dp))
+                        Text("Delete patient record", color = AlertRed, fontWeight = FontWeight.Bold)
                     }
                 }
             }
 
             if (viewModel.caregivers.isNotEmpty()) {
                 item { CaregiversCard(viewModel.caregivers, onToggleLogging = viewModel::setCaregiverLogging) }
+            }
+
+            item {
+                val todayEntry = viewModel.entries.firstOrNull { it.entryDate == LocalDate.now() }
+                val isTodayMandatoryMet = todayEntry?.isAnyFieldLogged() == true
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                        .background(SurfaceCard, RoundedCornerShape(16.dp))
+                        .border(1.dp, if (isTodayMandatoryMet) AccentYellowGold else AlertRed, RoundedCornerShape(16.dp))
+                        .padding(16.dp),
+                ) {
+                    Text("Today's Mandatory Compliance", color = AccentYellowGold, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        if (isTodayMandatoryMet) "Status: Completed ✓ (Mandatory Check-In Met)" else "Status: Pending ✗ (0 Submissions Today)",
+                        color = if (isTodayMandatoryMet) AccentYellowGold else AlertRed,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
             }
 
             item {
@@ -153,6 +198,38 @@ fun PatientDetailScreen(
                 }
             }
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Patient Record?", color = AlertRed, fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "Are you sure you want to permanently delete this patient record? This action cannot be undone.",
+                    color = TextPrimary,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deletePatient {
+                            Toast.makeText(context, "Patient profile deleted successfully.", Toast.LENGTH_SHORT).show()
+                            onBack()
+                        }
+                    },
+                ) {
+                    Text("Confirm Delete", color = AlertRed, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel", color = TextSecondary)
+                }
+            },
+            containerColor = SurfaceCard,
+        )
     }
 }
 
@@ -199,6 +276,16 @@ private fun CaregiversCard(caregivers: List<com.postpci.drrrp.data.sync.dto.Care
 
 @Composable
 private fun DailyEntryCard(entry: DailyEntryEntity) {
+    val formattedTime = remember(entry.createdAt) {
+        try {
+            val instant = java.time.Instant.ofEpochMilli(entry.createdAt)
+            val zdt = java.time.ZonedDateTime.ofInstant(instant, java.time.ZoneId.systemDefault())
+            zdt.format(java.time.format.DateTimeFormatter.ofPattern("hh:mm a"))
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -213,7 +300,7 @@ private fun DailyEntryCard(entry: DailyEntryEntity) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                entry.entryDate.toString(),
+                "${entry.entryDate}" + (formattedTime?.let { " at $it" } ?: ""),
                 color = TextSecondary,
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,

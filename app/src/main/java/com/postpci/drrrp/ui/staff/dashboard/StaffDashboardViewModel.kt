@@ -8,6 +8,7 @@ import com.postpci.drrrp.data.local.entity.PatientBaselineEntity
 import com.postpci.drrrp.data.model.AlertSeverity
 import com.postpci.drrrp.data.schedule.MonitoringSchedule
 import com.postpci.drrrp.data.sync.SyncApiService
+import com.postpci.drrrp.data.sync.SyncManager
 import com.postpci.drrrp.data.sync.dto.PatientListItemDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -59,6 +60,7 @@ data class StaffDashboardUiState(
 class StaffDashboardViewModel(
     private val database: DrRrpDatabase,
     private val syncApiService: SyncApiService,
+    private val syncManager: SyncManager,
 ) : ViewModel() {
     private val searchQuery = MutableStateFlow("")
     private val statusFilter = MutableStateFlow(AlertStatusFilter.ALL)
@@ -80,6 +82,18 @@ class StaffDashboardViewModel(
                 null
             }
             isLoading.value = false
+        }
+    }
+
+    fun deletePatient(patientId: String, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                syncManager.deletePatient(patientId)
+            } catch (_: Exception) {
+                // Best-effort offline delete
+            }
+            refresh()
+            onSuccess()
         }
     }
 

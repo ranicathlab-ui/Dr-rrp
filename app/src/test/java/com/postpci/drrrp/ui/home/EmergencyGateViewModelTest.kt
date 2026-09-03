@@ -77,6 +77,10 @@ private class FakeAlertDao : AlertDao {
     override suspend fun setSyncStatus(id: String, status: SyncStatus) {
         state.value = state.value.map { if (it.id == id) it.copy(syncStatus = status) else it }
     }
+
+    override suspend fun deleteForPatient(patientId: String) {
+        state.value = state.value.filterNot { it.patientId == patientId }
+    }
 }
 
 /** Unused by these tests beyond satisfying PatientCareRepository's constructor — no-op. */
@@ -90,6 +94,7 @@ private class FakeDailyEntryDao : DailyEntryDao {
     override fun observeRange(patientId: String, from: LocalDate, to: LocalDate): Flow<List<DailyEntryEntity>> = MutableStateFlow(emptyList())
     override suspend fun getPendingSync(): List<DailyEntryEntity> = emptyList()
     override suspend fun setSyncStatus(id: String, status: SyncStatus) {}
+    override suspend fun deleteForPatient(patientId: String) {}
 }
 
 /** Unused by these tests beyond satisfying PatientCareRepository's constructor — no-op. */
@@ -98,6 +103,7 @@ private class FakeBleedingEventDao : BleedingEventDao {
     override fun observeForPatient(patientId: String): Flow<List<BleedingEventEntity>> = MutableStateFlow(emptyList())
     override suspend fun getPendingSync(): List<BleedingEventEntity> = emptyList()
     override suspend fun setSyncStatus(id: String, status: SyncStatus) {}
+    override suspend fun deleteForPatient(patientId: String) {}
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

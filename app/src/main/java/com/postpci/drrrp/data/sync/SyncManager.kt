@@ -145,6 +145,15 @@ class SyncManager(
     suspend fun pullMessages(patientId: String) {
         api.getMessages(patientId).forEach { database.messageDao().upsert(it.toEntity()) }
     }
+
+    suspend fun deletePatient(patientId: String) {
+        api.deletePatient(patientId)
+        database.patientBaselineDao().delete(patientId)
+        database.dailyEntryDao().deleteForPatient(patientId)
+        database.alertDao().deleteForPatient(patientId)
+        database.messageDao().deleteForPatient(patientId)
+        database.bleedingEventDao().deleteForPatient(patientId)
+    }
 }
 
 data class SyncResult(val succeeded: Int, val failed: Int)

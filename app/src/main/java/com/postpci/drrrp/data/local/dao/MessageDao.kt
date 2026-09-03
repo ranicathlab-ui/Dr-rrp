@@ -36,4 +36,7 @@ interface MessageDao {
 
     @Query("UPDATE message SET syncStatus = :status WHERE id = :id")
     suspend fun setSyncStatus(id: String, status: SyncStatus)
+
+    @Query("DELETE FROM message WHERE patientId = :patientId")
+    suspend fun deleteForPatient(patientId: String)
 }

@@ -20,4 +20,7 @@ interface BleedingEventDao {
 
     @Query("UPDATE bleeding_event SET syncStatus = :status WHERE id = :id")
     suspend fun setSyncStatus(id: String, status: SyncStatus)
+
+    @Query("DELETE FROM bleeding_event WHERE patientId = :patientId")
+    suspend fun deleteForPatient(patientId: String)
 }

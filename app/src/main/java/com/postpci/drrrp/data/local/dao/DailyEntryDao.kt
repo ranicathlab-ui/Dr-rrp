@@ -39,4 +39,7 @@ interface DailyEntryDao {
 
     @Query("UPDATE daily_entry SET syncStatus = :status WHERE id = :id")
     suspend fun setSyncStatus(id: String, status: SyncStatus)
+
+    @Query("DELETE FROM daily_entry WHERE patientId = :patientId")
+    suspend fun deleteForPatient(patientId: String)
 }

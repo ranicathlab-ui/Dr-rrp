@@ -47,4 +47,7 @@ interface AlertDao {
 
     @Query("UPDATE alert SET syncStatus = :status WHERE id = :id")
     suspend fun setSyncStatus(id: String, status: SyncStatus)
+
+    @Query("DELETE FROM alert WHERE patientId = :patientId")
+    suspend fun deleteForPatient(patientId: String)
 }

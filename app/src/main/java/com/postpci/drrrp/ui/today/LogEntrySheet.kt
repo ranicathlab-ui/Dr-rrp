@@ -1,5 +1,6 @@
 package com.postpci.drrrp.ui.today
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.postpci.drrrp.ui.common.bringIntoViewOnFocus
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -118,9 +120,11 @@ private fun InlineValidationWarning(message: String) {
 @Composable
 private fun SaveButton(enabled: Boolean, onClick: () -> Unit) {
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
     Button(
         onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            Toast.makeText(context, "Saved ✓", Toast.LENGTH_SHORT).show()
             onClick()
         },
         enabled = enabled,
