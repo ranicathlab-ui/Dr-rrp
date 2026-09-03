@@ -28,6 +28,9 @@ class FakeAuthGateway : AuthGateway {
     private val _currentUser = MutableStateFlow<AuthUser?>(null)
     override val currentUser: StateFlow<AuthUser?> = _currentUser
 
+    private val _isSessionRestored = MutableStateFlow(true)
+    override val isSessionRestored: StateFlow<Boolean> = _isSessionRestored
+
     companion object {
         const val DEMO_STAFF_EMAIL = "staff@aasaihealthcentre.test"
         const val DEMO_STAFF_PASSWORD = "staff123"

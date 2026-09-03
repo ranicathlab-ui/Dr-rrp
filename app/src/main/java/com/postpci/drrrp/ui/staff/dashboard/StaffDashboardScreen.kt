@@ -47,8 +47,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.postpci.drrrp.DrRrpApplication
 import com.postpci.drrrp.data.model.AlertSeverity
 import com.postpci.drrrp.ui.common.DrRrpScaffold
-import com.postpci.drrrp.ui.common.drrrpFieldColors
 import com.postpci.drrrp.ui.common.bringIntoViewOnFocus
+import com.postpci.drrrp.ui.common.drrrpFieldColors
 import com.postpci.drrrp.ui.theme.AccentYellowGold
 import com.postpci.drrrp.ui.theme.AlertRed
 import com.postpci.drrrp.ui.theme.BorderHairline
@@ -196,34 +196,44 @@ private fun PatientCard(
             .clickable(onClick = onClick)
             .padding(16.dp),
     ) {
-        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            Text(patient.name, color = TextPrimary, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            patient.dayNPostPci?.let {
-                Text("Day $it", color = AccentYellowGold, style = MaterialTheme.typography.labelLarge, fontFamily = IBMPlexMono)
-            }
-        }
-        Text(
-            "Age ${patient.age ?: "—"}",
-            color = TextSecondary,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(top = 2.dp),
-        )
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = patient.name,
+                color = TextPrimary,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            patient.dayNPostPci?.let {
+                Text(
+                    text = "Day $it",
+                    color = AccentYellowGold,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontFamily = IBMPlexMono,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+        }
+
+        Text(
+            text = "Age ${patient.age ?: "—"}",
+            color = TextSecondary,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 2.dp, bottom = 8.dp),
+        )
+
+        // Status badges arranged cleanly to prevent overlapping
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .weight(1f, fill = false)
-                    .then(
-                        if (patient.hasMessages || patient.hasUnreadMessages) {
-                            Modifier.clickable(onClick = onOpenMessaging)
-                        } else {
-                            Modifier
-                        },
-                    ),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 when (patient.lastAlertSeverity) {
                     AlertSeverity.EMERGENCY -> Text("● EMERGENCY", color = AlertRed, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
@@ -231,40 +241,35 @@ private fun PatientCard(
                     AlertSeverity.INFO, null -> Text("No active alerts", color = TextSecondary, style = MaterialTheme.typography.labelLarge)
                 }
                 if (patient.hasMissedEntry) {
-                    Text(
-                        "  ·  Missed entry",
-                        color = StatusInfo,
-                        style = MaterialTheme.typography.labelLarge,
-                    )
-                }
-                if (patient.hasUnreadMessages) {
-                    Text(
-                        "  ·  ✉ New msg",
-                        color = AccentYellowGold,
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                } else if (patient.hasMessages) {
-                    Text(
-                        "  ·  ✉ Messages",
-                        color = TextSecondary,
-                        style = MaterialTheme.typography.labelLarge,
-                    )
+                    Text("· Missed entry", color = StatusInfo, style = MaterialTheme.typography.labelLarge)
                 }
             }
+            if (patient.hasUnreadMessages || patient.hasMessages) {
+                Text(
+                    text = if (patient.hasUnreadMessages) "✉ New message(s)" else "✉ Messages thread",
+                    color = if (patient.hasUnreadMessages) AccentYellowGold else TextSecondary,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = if (patient.hasUnreadMessages) FontWeight.Bold else FontWeight.Normal
+                )
+            }
+        }
 
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                OutlinedButton(
-                    onClick = onOpenMessaging,
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentYellowGold),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AccentYellowGold),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                ) {
-                    Text("Message ✉", color = AccentYellowGold, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Delete patient record", tint = AlertRed)
-                }
+        // Action buttons aligned cleanly at the bottom right
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            OutlinedButton(
+                onClick = onOpenMessaging,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentYellowGold),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AccentYellowGold),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            ) {
+                Text("Message ✉", color = AccentYellowGold, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Filled.Delete, contentDescription = "Delete patient record", tint = AlertRed)
             }
         }
     }

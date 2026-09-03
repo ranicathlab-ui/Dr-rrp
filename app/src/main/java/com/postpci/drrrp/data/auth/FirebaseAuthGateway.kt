@@ -47,6 +47,9 @@ class FirebaseAuthGateway(
     private val _currentUser = MutableStateFlow<AuthUser?>(null)
     override val currentUser: StateFlow<AuthUser?> = _currentUser
 
+    private val _isSessionRestored = MutableStateFlow(auth.currentUser == null)
+    override val isSessionRestored: StateFlow<Boolean> = _isSessionRestored
+
     // Built lazily, referencing this instance as its own AuthGateway (for AuthInterceptor) — by
     // the time an invite call actually happens, sign-in has long since completed, so getIdToken()
     // works fine despite the apparent self-reference. See InviteApiProvider's doc for why this
@@ -85,6 +88,8 @@ class FirebaseAuthGateway(
                 // as if they'd never had a session. Nothing destructive either way.
             } catch (e: Exception) {
                 // Offline on cold start, etc. — same fallback: login screen, try again later.
+            } finally {
+                _isSessionRestored.value = true
             }
         }
     }

@@ -16,6 +16,9 @@ interface AuthGateway {
     /** Null when signed out. Screens observe this to route between the login and app graphs. */
     val currentUser: StateFlow<AuthUser?>
 
+    /** Emits true once cold-start Firebase session restoration check completes. */
+    val isSessionRestored: StateFlow<Boolean>
+
     suspend fun signIn(email: String, password: String, allowedRoles: Set<UserRole>? = null): SignInResult
 
     /** Patient/caregiver first-login flow: they set their own password from a staff-issued invite. */

@@ -16,9 +16,11 @@ import com.postpci.drrrp.ui.auth.LoginScreen
 import com.postpci.drrrp.ui.home.CaregiverHome
 import com.postpci.drrrp.ui.home.PatientHome
 import com.postpci.drrrp.ui.onboarding.DisclaimerScreen
+import com.postpci.drrrp.ui.splash.SplashScreen
 import com.postpci.drrrp.ui.staff.StaffShell
 
 object Routes {
+    const val SPLASH = "splash"
     const val DISCLAIMER = "disclaimer"
     const val LOGIN = "login"
     const val PATIENT_HOME = "patient_home"
@@ -33,26 +35,26 @@ private fun UserRole.homeRoute(): String = when (this) {
 }
 
 /**
- * Single nav graph, routed by [com.postpci.drrrp.data.auth.AuthGateway.currentUser]: signed out
- * shows the login graph, signed in jumps straight to that role's home graph and clears the back
- * stack so "back" from home never returns to the login screen.
- *
- * A device that hasn't yet acknowledged [DisclaimerScreen] sees that instead of the login screen
- * — required by Google Play's health-app review before any sign-in is reachable. It's gated by
- * [com.postpci.drrrp.data.onboarding.DisclaimerPreferences], device-scoped (not per-account), so
- * it only ever shows once per install.
+ * Single nav graph, routed by [com.postpci.drrrp.data.auth.AuthGateway.currentUser] and
+ * [com.postpci.drrrp.data.auth.AuthGateway.isSessionRestored].
+ * Displays [SplashScreen] while cold-start session restoration is in progress to prevent
+ * any unwanted login screen flashing.
  */
 @Composable
 fun DrRrpNavHost(application: DrRrpApplication, navController: NavHostController = rememberNavController()) {
     val currentUser by application.authGateway.currentUser.collectAsState()
+    val isSessionRestored by application.authGateway.isSessionRestored.collectAsState()
 
-    // Read once at first composition, not inside the effect below, so the very first frame
-    // already renders the right screen instead of flashing the wrong one before the effect fires.
     val startDestination = remember {
-        if (application.disclaimerPreferences.hasAcknowledged) Routes.LOGIN else Routes.DISCLAIMER
+        when {
+            !isSessionRestored -> Routes.SPLASH
+            application.disclaimerPreferences.hasAcknowledged -> Routes.LOGIN
+            else -> Routes.DISCLAIMER
+        }
     }
 
-    LaunchedEffect(currentUser) {
+    LaunchedEffect(isSessionRestored, currentUser) {
+        if (!isSessionRestored) return@LaunchedEffect
         val target = when {
             currentUser != null -> currentUser!!.role.homeRoute()
             !application.disclaimerPreferences.hasAcknowledged -> Routes.DISCLAIMER
@@ -65,6 +67,9 @@ fun DrRrpNavHost(application: DrRrpApplication, navController: NavHostController
     }
 
     NavHost(navController = navController, startDestination = startDestination) {
+        composable(Routes.SPLASH) {
+            SplashScreen()
+        }
         composable(Routes.DISCLAIMER) {
             DisclaimerScreen(application = application) {
                 navController.navigate(Routes.LOGIN) {
