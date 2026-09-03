@@ -1,5 +1,6 @@
 package com.postpci.drrrp.data.auth
 
+import com.postpci.drrrp.data.model.UserRole
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -15,10 +16,10 @@ interface AuthGateway {
     /** Null when signed out. Screens observe this to route between the login and app graphs. */
     val currentUser: StateFlow<AuthUser?>
 
-    suspend fun signIn(email: String, password: String): SignInResult
+    suspend fun signIn(email: String, password: String, allowedRoles: Set<UserRole>? = null): SignInResult
 
     /** Patient/caregiver first-login flow: they set their own password from a staff-issued invite. */
-    suspend fun completeFirstLogin(email: String, newPassword: String): AuthOpResult
+    suspend fun completeFirstLogin(email: String, newPassword: String, allowedRoles: Set<UserRole>? = null): AuthOpResult
 
     suspend fun signOut()
 

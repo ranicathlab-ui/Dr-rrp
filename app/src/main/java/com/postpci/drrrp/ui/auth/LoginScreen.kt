@@ -42,12 +42,6 @@ import com.postpci.drrrp.ui.theme.TextPrimary
 import com.postpci.drrrp.ui.theme.TextSecondary
 import com.postpci.drrrp.ui.theme.appBackground
 
-/** Which half of the sign-in screen is showing — purely presentational: both lead to the exact
- *  same [LoginViewModel.submitSignIn], since the account's real role always comes from its
- *  Firestore doc, never from which tab was tapped. This only exists so patients/caregivers and
- *  clinical staff each see copy addressed to them, instead of one form trying to speak to both. */
-private enum class LoginAudience { PATIENT, STAFF }
-
 @Composable
 fun LoginScreen(application: DrRrpApplication, modifier: Modifier = Modifier) {
     val viewModel: LoginViewModel = viewModel(
@@ -56,7 +50,6 @@ fun LoginScreen(application: DrRrpApplication, modifier: Modifier = Modifier) {
         },
     )
     val state = viewModel.uiState
-    var audience by remember { mutableStateOf(LoginAudience.PATIENT) }
 
     Column(
         modifier = modifier
@@ -78,11 +71,11 @@ fun LoginScreen(application: DrRrpApplication, modifier: Modifier = Modifier) {
         )
 
         if (state.mode == LoginMode.SIGN_IN) {
-            AudienceSwitch(selected = audience, onSelect = { audience = it })
+            AudienceSwitch(selected = state.audience, onSelect = viewModel::onAudienceChange)
         }
 
         when (state.mode) {
-            LoginMode.SIGN_IN -> SignInForm(viewModel, state.email, state.password, state.isLoading, audience)
+            LoginMode.SIGN_IN -> SignInForm(viewModel, state.email, state.password, state.isLoading, state.audience)
             LoginMode.FIRST_LOGIN_SETUP -> FirstLoginSetupForm(
                 viewModel = viewModel,
                 email = state.email,

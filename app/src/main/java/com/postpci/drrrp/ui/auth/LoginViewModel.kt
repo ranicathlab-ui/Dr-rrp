@@ -8,7 +8,10 @@ import androidx.lifecycle.viewModelScope
 import com.postpci.drrrp.data.auth.AuthGateway
 import com.postpci.drrrp.data.auth.AuthOpResult
 import com.postpci.drrrp.data.auth.SignInResult
+import com.postpci.drrrp.data.model.UserRole
 import kotlinx.coroutines.launch
+
+enum class LoginAudience { PATIENT, STAFF }
 
 enum class LoginMode { SIGN_IN, FIRST_LOGIN_SETUP }
 
@@ -17,6 +20,7 @@ data class LoginUiState(
     val password: String = "",
     val newPassword: String = "",
     val confirmPassword: String = "",
+    val audience: LoginAudience = LoginAudience.PATIENT,
     val mode: LoginMode = LoginMode.SIGN_IN,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
@@ -48,6 +52,10 @@ class LoginViewModel(private val authGateway: AuthGateway) : ViewModel() {
         uiState = uiState.copy(confirmPassword = value, errorMessage = null)
     }
 
+    fun onAudienceChange(value: LoginAudience) {
+        uiState = uiState.copy(audience = value, errorMessage = null)
+    }
+
     fun submitSignIn() {
         val email = uiState.email.trim()
         val password = uiState.password
@@ -56,8 +64,12 @@ class LoginViewModel(private val authGateway: AuthGateway) : ViewModel() {
             return
         }
         uiState = uiState.copy(isLoading = true, errorMessage = null)
+        val allowedRoles = when (uiState.audience) {
+            LoginAudience.PATIENT -> setOf(UserRole.PATIENT, UserRole.CAREGIVER)
+            LoginAudience.STAFF -> setOf(UserRole.STAFF)
+        }
         viewModelScope.launch {
-            when (val result = authGateway.signIn(email, password)) {
+            when (val result = authGateway.signIn(email, password, allowedRoles)) {
                 is SignInResult.Success -> {
                     uiState = uiState.copy(isLoading = false)
                 }
@@ -81,8 +93,12 @@ class LoginViewModel(private val authGateway: AuthGateway) : ViewModel() {
             return
         }
         uiState = uiState.copy(isLoading = true, errorMessage = null)
+        val allowedRoles = when (uiState.audience) {
+            LoginAudience.PATIENT -> setOf(UserRole.PATIENT, UserRole.CAREGIVER)
+            LoginAudience.STAFF -> setOf(UserRole.STAFF)
+        }
         viewModelScope.launch {
-            val result = authGateway.completeFirstLogin(uiState.email.trim(), uiState.newPassword)
+            val result = authGateway.completeFirstLogin(uiState.email.trim(), uiState.newPassword, allowedRoles)
             uiState = when (result) {
                 AuthOpResult.Success -> uiState.copy(isLoading = false)
                 is AuthOpResult.Error -> uiState.copy(isLoading = false, errorMessage = result.message)

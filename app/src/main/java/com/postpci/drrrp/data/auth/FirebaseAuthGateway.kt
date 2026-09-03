@@ -89,7 +89,7 @@ class FirebaseAuthGateway(
         }
     }
 
-    override suspend fun signIn(email: String, password: String): SignInResult {
+    override suspend fun signIn(email: String, password: String, allowedRoles: Set<UserRole>?): SignInResult {
         val trimmedEmail = email.trim()
         val authResult = try {
             auth.signInWithEmailAndPassword(trimmedEmail, password).await()
@@ -110,11 +110,24 @@ class FirebaseAuthGateway(
         }
         val user = doc.toAuthUser(uid, authResult.user?.email ?: trimmedEmail)
             ?: return SignInResult.Error("Account record is incomplete.")
+
+        if (allowedRoles != null && user.role !in allowedRoles) {
+            auth.signOut()
+            val msg = if (user.role == UserRole.STAFF) {
+                "This is a Clinical Staff account. Please switch to the 'Clinical Staff' tab to sign in."
+            } else if (user.role == UserRole.CAREGIVER) {
+                "This is a Caregiver account. Please switch to the 'Patients' tab to sign in."
+            } else {
+                "This is a Patient account. Please switch to the 'Patients' tab to sign in."
+            }
+            return SignInResult.Error(msg)
+        }
+
         _currentUser.value = user
         return SignInResult.Success(user)
     }
 
-    override suspend fun completeFirstLogin(email: String, newPassword: String): AuthOpResult {
+    override suspend fun completeFirstLogin(email: String, newPassword: String, allowedRoles: Set<UserRole>?): AuthOpResult {
         if (newPassword.length < 6) {
             return AuthOpResult.Error("Password must be at least 6 characters.")
         }
@@ -129,6 +142,19 @@ class FirebaseAuthGateway(
             userDoc.update(FIELD_MUST_CHANGE_PASSWORD, false).await()
             val user = userDoc.get().await().toAuthUser(uid, firebaseUser.email ?: email.trim())
                 ?: return AuthOpResult.Error("Account record is incomplete.")
+
+            if (allowedRoles != null && user.role !in allowedRoles) {
+                auth.signOut()
+                val msg = if (user.role == UserRole.STAFF) {
+                    "This is a Clinical Staff account. Please switch to the 'Clinical Staff' tab to sign in."
+                } else if (user.role == UserRole.CAREGIVER) {
+                    "This is a Caregiver account. Please switch to the 'Patients' tab to sign in."
+                } else {
+                    "This is a Patient account. Please switch to the 'Patients' tab to sign in."
+                }
+                return AuthOpResult.Error(msg)
+            }
+
             _currentUser.value = user
             AuthOpResult.Success
         } catch (e: Exception) {

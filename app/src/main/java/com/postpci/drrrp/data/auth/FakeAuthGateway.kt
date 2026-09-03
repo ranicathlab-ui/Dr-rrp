@@ -61,7 +61,7 @@ class FakeAuthGateway : AuthGateway {
         )
     }
 
-    override suspend fun signIn(email: String, password: String): SignInResult {
+    override suspend fun signIn(email: String, password: String, allowedRoles: Set<UserRole>?): SignInResult {
         val account = accounts[email.trim().lowercase()]
             ?: return SignInResult.Error("No account found for this email.")
         if (account.password == null) {
@@ -71,18 +71,39 @@ class FakeAuthGateway : AuthGateway {
             return SignInResult.Error("Incorrect password.")
         }
         val user = account.toAuthUser()
+        if (allowedRoles != null && user.role !in allowedRoles) {
+            val msg = if (user.role == UserRole.STAFF) {
+                "This is a Clinical Staff account. Please switch to the 'Clinical Staff' tab to sign in."
+            } else if (user.role == UserRole.CAREGIVER) {
+                "This is a Caregiver account. Please switch to the 'Patients' tab to sign in."
+            } else {
+                "This is a Patient account. Please switch to the 'Patients' tab to sign in."
+            }
+            return SignInResult.Error(msg)
+        }
         _currentUser.value = user
         return SignInResult.Success(user)
     }
 
-    override suspend fun completeFirstLogin(email: String, newPassword: String): AuthOpResult {
+    override suspend fun completeFirstLogin(email: String, newPassword: String, allowedRoles: Set<UserRole>?): AuthOpResult {
         val account = accounts[email.trim().lowercase()]
             ?: return AuthOpResult.Error("No invite found for this email.")
         if (newPassword.length < 6) {
             return AuthOpResult.Error("Password must be at least 6 characters.")
         }
+        val user = account.toAuthUser()
+        if (allowedRoles != null && user.role !in allowedRoles) {
+            val msg = if (user.role == UserRole.STAFF) {
+                "This is a Clinical Staff account. Please switch to the 'Clinical Staff' tab to sign in."
+            } else if (user.role == UserRole.CAREGIVER) {
+                "This is a Caregiver account. Please switch to the 'Patients' tab to sign in."
+            } else {
+                "This is a Patient account. Please switch to the 'Patients' tab to sign in."
+            }
+            return AuthOpResult.Error(msg)
+        }
         account.password = newPassword
-        _currentUser.value = account.toAuthUser()
+        _currentUser.value = user
         return AuthOpResult.Success
     }
 
