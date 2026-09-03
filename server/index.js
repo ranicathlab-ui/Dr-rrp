@@ -609,5 +609,43 @@ app.use((err, req, res, next) => {
 // is exactly the kind of thing that took the whole backend down repeatedly before that existed.
 process.on("unhandledRejection", (reason) => console.error("Unhandled promise rejection:", reason));
 
+async function seedInitialStaffAccounts() {
+  const staffList = [
+    { email: "drprasad27@yahoo.co.in", name: "Dr. A. Rajaram Prasad", password: "drrrpapp@2026" },
+    { email: "deepthibr@gmail.com", name: "Dr. Deepthi B R", password: "drrrpapp@2026" },
+    { email: "dreswaran@gmail.com", name: "Dr. Eswaran", password: "drrrpapp@2026" },
+  ];
+
+  for (const s of staffList) {
+    try {
+      let userRecord;
+      try {
+        userRecord = await getAuth().getUserByEmail(s.email);
+        console.log(`Staff user ${s.email} already exists in Firebase Auth (${userRecord.uid}).`);
+      } catch (e) {
+        if (e?.code === "auth/user-not-found") {
+          userRecord = await getAuth().createUser({ email: s.email, password: s.password, displayName: s.name });
+          console.log(`Created staff user ${s.email} in Firebase Auth (${userRecord.uid}).`);
+        } else {
+          throw e;
+        }
+      }
+
+      await getFirestore().collection("users").doc(userRecord.uid).set({
+        role: "STAFF",
+        displayName: s.name,
+        mustChangePassword: false,
+        createdAt: new Date().toISOString(),
+      }, { merge: true });
+      console.log(`Seeded Firestore users/${userRecord.uid} role = STAFF for ${s.name}.`);
+    } catch (err) {
+      console.error(`Failed seeding staff ${s.email}:`, err);
+    }
+  }
+}
+
 const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`DR RRP backend listening on :${port}`));
+app.listen(port, () => {
+  console.log(`DR RRP backend listening on :${port}`);
+  seedInitialStaffAccounts();
+});

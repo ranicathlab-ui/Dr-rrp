@@ -31,12 +31,10 @@ class FakeAuthGateway : AuthGateway {
     companion object {
         const val DEMO_STAFF_EMAIL = "staff@aasaihealthcentre.test"
         const val DEMO_STAFF_PASSWORD = "staff123"
-        const val DEMO_STAFF2_EMAIL = "staff2@aasaihealthcentre.test"
-        const val DEMO_STAFF2_PASSWORD = "staff123"
-        const val DEMO_STAFF3_EMAIL = "staff3@aasaihealthcentre.test"
-        const val DEMO_STAFF3_PASSWORD = "staff123"
-        const val DEMO_STAFF4_EMAIL = "staff4@aasaihealthcentre.test"
-        const val DEMO_STAFF4_PASSWORD = "staff123"
+        const val STAFF1_EMAIL = "drprasad27@yahoo.co.in"
+        const val STAFF2_EMAIL = "deepthibr@gmail.com"
+        const val STAFF3_EMAIL = "dreswaran@gmail.com"
+        const val STAFF_PASSWORD = "drrrpapp@2026"
         const val DEMO_PATIENT_EMAIL = "patient@example.test"
         const val DEMO_CAREGIVER_EMAIL = "caregiver@example.test"
         const val DEMO_PATIENT_ID = "demo-patient-1"
@@ -47,28 +45,28 @@ class FakeAuthGateway : AuthGateway {
             uid = "staff-1",
             email = DEMO_STAFF_EMAIL,
             password = DEMO_STAFF_PASSWORD,
-            displayName = "Clinic Staff 1",
+            displayName = "Clinic Staff",
             role = UserRole.STAFF,
         )
-        accounts[DEMO_STAFF2_EMAIL] = FakeAccount(
-            uid = "staff-2",
-            email = DEMO_STAFF2_EMAIL,
-            password = DEMO_STAFF2_PASSWORD,
-            displayName = "Clinic Staff 2",
+        accounts[STAFF1_EMAIL] = FakeAccount(
+            uid = "staff-dr-prasad",
+            email = STAFF1_EMAIL,
+            password = STAFF_PASSWORD,
+            displayName = "Dr. A. Rajaram Prasad",
             role = UserRole.STAFF,
         )
-        accounts[DEMO_STAFF3_EMAIL] = FakeAccount(
-            uid = "staff-3",
-            email = DEMO_STAFF3_EMAIL,
-            password = DEMO_STAFF3_PASSWORD,
-            displayName = "Clinic Staff 3",
+        accounts[STAFF2_EMAIL] = FakeAccount(
+            uid = "staff-dr-deepthi",
+            email = STAFF2_EMAIL,
+            password = STAFF_PASSWORD,
+            displayName = "Dr. Deepthi B R",
             role = UserRole.STAFF,
         )
-        accounts[DEMO_STAFF4_EMAIL] = FakeAccount(
-            uid = "staff-4",
-            email = DEMO_STAFF4_EMAIL,
-            password = DEMO_STAFF4_PASSWORD,
-            displayName = "Clinic Staff 4",
+        accounts[STAFF3_EMAIL] = FakeAccount(
+            uid = "staff-dr-eswaran",
+            email = STAFF3_EMAIL,
+            password = STAFF_PASSWORD,
+            displayName = "Dr. Eswaran",
             role = UserRole.STAFF,
         )
         accounts[DEMO_PATIENT_EMAIL] = FakeAccount(
