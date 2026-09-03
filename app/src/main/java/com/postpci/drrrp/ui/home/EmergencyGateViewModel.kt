@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * Watches for unreviewed EMERGENCY-tier alerts across the whole patient/caregiver shell (not
@@ -16,7 +17,10 @@ import kotlinx.coroutines.flow.stateIn
  * just whichever tab happened to trigger it. A dismissed alert stays dismissed for this app
  * session but remains unreviewed until staff/patient actually reviews it on the Alerts screen.
  */
-class EmergencyGateViewModel(repository: PatientCareRepository, patientId: String) : ViewModel() {
+class EmergencyGateViewModel(
+    private val repository: PatientCareRepository,
+    patientId: String,
+) : ViewModel() {
     private val dismissedIds = MutableStateFlow<Set<String>>(emptySet())
 
     val pendingEmergencyAlert: StateFlow<com.postpci.drrrp.data.local.entity.AlertEntity?> = combine(
@@ -31,5 +35,12 @@ class EmergencyGateViewModel(repository: PatientCareRepository, patientId: Strin
 
     fun dismiss(alertId: String) {
         dismissedIds.value = dismissedIds.value + alertId
+        viewModelScope.launch {
+            try {
+                repository.markAlertReviewed(alertId)
+            } catch (_: Exception) {
+                // Best-effort local write
+            }
+        }
     }
 }

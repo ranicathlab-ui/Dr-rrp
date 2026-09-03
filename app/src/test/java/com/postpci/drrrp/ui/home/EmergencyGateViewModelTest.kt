@@ -183,8 +183,7 @@ class EmergencyGateViewModelTest {
         viewModel.dismiss("em-1")
         advanceUntilIdle()
         assertNull(
-            "Dismissing must clear the takeover even though the alert is still unreviewed (it stays " +
-                "reviewable on the Alerts screen — dismiss only affects this session's takeover)",
+            "Dismissing must clear the takeover and mark the alert reviewed so it won't re-appear on future app launches",
             viewModel.pendingEmergencyAlert.value,
         )
 
