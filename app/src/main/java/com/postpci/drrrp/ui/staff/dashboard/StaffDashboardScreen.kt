@@ -18,6 +18,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -110,9 +111,16 @@ fun StaffDashboardScreen(
             } else {
                 LazyColumn {
                     items(state.patients, key = { it.patientId }) { patient ->
+                        val isMessagesFilter = state.statusFilter == AlertStatusFilter.MESSAGES
                         PatientCard(
                             patient = patient,
-                            onClick = { onOpenPatient(patient.patientId) },
+                            onClick = {
+                                if (isMessagesFilter) {
+                                    onOpenMessaging(patient.patientId)
+                                } else {
+                                    onOpenPatient(patient.patientId)
+                                }
+                            },
                             onOpenMessaging = { onOpenMessaging(patient.patientId) },
                         )
                     }
@@ -157,7 +165,18 @@ private fun PatientCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f, fill = false)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .then(
+                        if (patient.hasMessages || patient.hasUnreadMessages) {
+                            Modifier.clickable(onClick = onOpenMessaging)
+                        } else {
+                            Modifier
+                        },
+                    ),
+            ) {
                 when (patient.lastAlertSeverity) {
                     AlertSeverity.EMERGENCY -> Text("● EMERGENCY", color = AlertRed, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                     AlertSeverity.ROUTINE -> Text("● Flagged", color = AlertRed, style = MaterialTheme.typography.labelLarge)
@@ -186,9 +205,11 @@ private fun PatientCard(
                 }
             }
 
-            TextButton(
+            OutlinedButton(
                 onClick = onOpenMessaging,
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentYellowGold),
+                border = androidx.compose.foundation.BorderStroke(1.dp, AccentYellowGold),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 2.dp),
             ) {
                 Text("Message ✉", color = AccentYellowGold, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             }
