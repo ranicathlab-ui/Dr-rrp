@@ -2,37 +2,40 @@ package com.postpci.drrrp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// DR RRP dark-only palette. Do not introduce a light theme or alternate accents.
+// --- Modern Medical-Grade Color Palette ---
 
-/** Near-black background; combine with [BackgroundGradientTop] for the subtle blue radial glow. */
-val BackgroundNearBlack = Color(0xFF0A0E16)
+// Dark Palette
+val DarkBackground = Color(0xFF0B1120) // Deep charcoal navy
+val DarkSurface = Color(0xFF131D31) // Elevated dark card surface
+val DarkBorder = Color(0xFF1E293B) // Subtle dark border
+val TextPrimaryDark = Color(0xFFF8FAFC)
+val TextSecondaryDark = Color(0xFF94A3B8)
 
-/** Top-of-screen blue used in the subtle radial gradient over [BackgroundNearBlack]. */
-val BackgroundGradientTop = Color(0xFF1B2E63)
+// Light Palette
+val LightBackground = Color(0xFFF8FAFC) // Soft off-white/slate
+val LightSurface = Color(0xFFFFFFFF) // Elevated pure white card
+val LightBorder = Color(0xFFE2E8F0) // Subtle light border
+val TextPrimaryLight = Color(0xFF0F172A) // Crisp navy/slate text
+val TextSecondaryLight = Color(0xFF64748B) // Muted slate secondary text
 
-/** Header / navigation deep blue. */
-val HeaderDeepBlue = Color(0xFF1B2E63)
+// Professional Medical Accents
+val MedicalTealBlue = Color(0xFF0284C7) // Professional medical teal/blue primary
+val MedicalTealBlueDark = Color(0xFF38BDF8)
+val AccentAmber = Color(0xFFD97706) // Distinct amber for warnings / routine flags
+val AlertRoseRed = Color(0xFFE11D48) // Soft rose/red for emergencies
+val StatusGoodGreen = Color(0xFF059669) // Success / stable
+val StatusInfo = Color(0xFF2563EB)
 
-/** Header / navigation bright blue accent. */
-val HeaderBrightBlue = Color(0xFF3E6EF0)
-
-/** Primary buttons and the "Day N post-PCI" badge. Warm yellow-gold. */
-val AccentYellowGold = Color(0xFFFFC53D)
-
-/** Reserved ONLY for alerts and out-of-range readings. Never used decoratively. */
-val AlertRed = Color(0xFFFF5A5F)
-
-/** Card surface color. */
-val SurfaceCard = Color(0xFF131A26)
-
-/** 1px hairline border on cards. */
-val BorderHairline = Color(0xFF232E3F)
-
-// Derived text colors against the dark surfaces above.
-val TextPrimary = Color(0xFFF5F7FA)
-val TextSecondary = Color(0xFFA7B0C0)
-val TextDisabled = Color(0xFF5C6577)
-
-// Semantic status colors (kept out of the alert-red family so red stays reserved for alerts).
-val StatusGood = Color(0xFF3FCF8E)
-val StatusInfo = Color(0xFF3E6EF0)
+// Legacy aliases for backward compatibility across modules
+val BackgroundNearBlack = DarkBackground
+val BackgroundGradientTop = Color(0xFF1E293B)
+val HeaderDeepBlue = Color(0xFF0F172A)
+val HeaderBrightBlue = MedicalTealBlue
+val AccentYellowGold = AccentAmber
+val AlertRed = AlertRoseRed
+val SurfaceCard = DarkSurface
+val BorderHairline = DarkBorder
+val TextPrimary = TextPrimaryDark
+val TextSecondary = TextSecondaryDark
+val TextDisabled = Color(0xFF475569)
+val StatusGood = StatusGoodGreen

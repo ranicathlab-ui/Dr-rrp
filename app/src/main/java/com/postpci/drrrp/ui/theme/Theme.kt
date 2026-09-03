@@ -14,36 +14,36 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 private val DarkColorScheme = darkColorScheme(
-    primary = AccentYellowGold,
-    onPrimary = Color(0xFF241A00),
-    secondary = HeaderBrightBlue,
+    primary = MedicalTealBlueDark,
+    onPrimary = Color.White,
+    secondary = MedicalTealBlueDark,
     onSecondary = Color.White,
-    tertiary = HeaderBrightBlue,
-    background = BackgroundNearBlack,
-    onBackground = TextPrimary,
-    surface = SurfaceCard,
-    onSurface = TextPrimary,
-    surfaceVariant = SurfaceCard,
-    onSurfaceVariant = TextSecondary,
-    outline = BorderHairline,
-    error = AlertRed,
+    tertiary = MedicalTealBlueDark,
+    background = DarkBackground,
+    onBackground = TextPrimaryDark,
+    surface = DarkSurface,
+    onSurface = TextPrimaryDark,
+    surfaceVariant = DarkSurface,
+    onSurfaceVariant = TextSecondaryDark,
+    outline = DarkBorder,
+    error = AlertRoseRed,
     onError = Color.White,
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF996B00),
+    primary = MedicalTealBlue,
     onPrimary = Color.White,
-    secondary = Color(0xFF2B52D4),
+    secondary = MedicalTealBlue,
     onSecondary = Color.White,
-    tertiary = Color(0xFF2B52D4),
-    background = Color(0xFFF8FAFC),
-    onBackground = Color(0xFF0F172A),
-    surface = Color(0xFFFFFFFF),
-    onSurface = Color(0xFF0F172A),
+    tertiary = MedicalTealBlue,
+    background = LightBackground,
+    onBackground = TextPrimaryLight,
+    surface = LightSurface,
+    onSurface = TextPrimaryLight,
     surfaceVariant = Color(0xFFF1F5F9),
-    onSurfaceVariant = Color(0xFF475569),
-    outline = Color(0xFFCBD5E1),
-    error = Color(0xFFDC2626),
+    onSurfaceVariant = TextSecondaryLight,
+    outline = LightBorder,
+    error = AlertRoseRed,
     onError = Color.White,
 )
 
@@ -53,13 +53,13 @@ val AppBackgroundBrush: Brush
         val dark = isSystemInDarkTheme()
         return if (dark) {
             Brush.radialGradient(
-                colors = listOf(BackgroundGradientTop.copy(alpha = 0.35f), BackgroundNearBlack),
+                colors = listOf(Color(0xFF1E293B).copy(alpha = 0.25f), DarkBackground),
                 center = Offset(0.5f, 0f),
                 radius = 1400f,
             )
         } else {
             Brush.radialGradient(
-                colors = listOf(Color(0xFFE2E8F0), Color(0xFFF8FAFC)),
+                colors = listOf(Color(0xFFE2E8F0).copy(alpha = 0.5f), LightBackground),
                 center = Offset(0.5f, 0f),
                 radius = 1400f,
             )
