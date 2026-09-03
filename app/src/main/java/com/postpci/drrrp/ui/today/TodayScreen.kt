@@ -183,12 +183,22 @@ fun TodayScreen(
                     enter = fadeIn() + expandVertically(),
                     exit = fadeOut() + shrinkVertically(),
                 ) {
-                    val remaining = state.dueFields.count { !isFieldLogged(it, state.todayEntry) }
-                    Text(
-                        text = if (remaining == 0) "All done for today — thank you!" else "$remaining field(s) still need logging today.",
-                        color = if (remaining == 0) AccentYellowGold else TextSecondary,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+                    val unloggedFields = state.dueFields.filter { !isFieldLogged(it, state.todayEntry) }
+                    if (unloggedFields.isEmpty()) {
+                        Text(
+                            text = "All done for today — thank you!",
+                            color = AccentYellowGold,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    } else {
+                        val unloggedLabels = unloggedFields.map { fieldMetaByKey[it]?.label ?: it }.joinToString(", ")
+                        Text(
+                            text = "${unloggedFields.size} field(s) still need logging today: $unloggedLabels",
+                            color = TextSecondary,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                 }
             }
         }
@@ -279,6 +289,7 @@ private fun isFieldLogged(fieldKey: String, entry: DailyEntryEntity?): Boolean {
         MonitoringSchedule.PALPITATIONS_SYNCOPE ->
             entry.palpitations != null && entry.syncope != null && entry.nearSyncope != null
         MonitoringSchedule.BREATHLESSNESS -> entry.nyhaClass != null
+        MonitoringSchedule.MEDICATIONS_TAKEN -> entry.daptTaken != null || !entry.medicationsTaken.isNullOrBlank()
         else -> false
     }
 }
