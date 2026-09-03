@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -87,7 +88,10 @@ fun BaselineWizardScreen(
 
         val credentials = viewModel.inviteCredentials
 
-        LazyColumn(modifier = modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
+        // imePadding: without it, the keyboard covers whatever's at the bottom of the list with
+        // no room to scroll a lower field past it — each field's own bringIntoViewOnFocus (see
+        // FormFields.kt) needs that extra space to actually scroll into, not just a request to.
+        LazyColumn(modifier = modifier.padding(horizontal = 20.dp, vertical = 16.dp).imePadding()) {
             item {
                 StepProgress(currentStep = viewModel.currentStep)
                 if (credentials != null && viewModel.currentStep == 1) {

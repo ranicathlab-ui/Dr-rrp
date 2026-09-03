@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -26,8 +28,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -38,6 +42,7 @@ import com.postpci.drrrp.ui.theme.TextSecondary
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import kotlinx.coroutines.launch
 
 /**
  * Shared, terse building blocks for the staff baseline wizard's ~60 fields — every step composes
@@ -59,14 +64,41 @@ fun drrrpFieldColors() = OutlinedTextFieldDefaults.colors(
     cursorColor = AccentYellowGold,
 )
 
+/**
+ * Every field below attaches this: without it, the wizard's forms only relied on the enclosing
+ * LazyColumn's own scroll to keep a field visible above the keyboard, which never actually
+ * happens on its own — Compose doesn't move scroll position just because a field gained focus,
+ * so the keyboard could sit directly over whatever field staff had just tapped (worse the lower
+ * on the screen it was) with no way to see what they were typing short of manually dragging the
+ * list up first. This makes each field bring *itself* into view the instant it's focused, the
+ * same guarantee the classic View-system got from `adjustResize` + a focused EditText's own
+ * `requestRectangleOnScreen` — Compose has no such automatic behavior, so every field has to ask
+ * for it explicitly.
+ */
 @Composable
-fun FormTextField(label: String, value: String, modifier: Modifier = Modifier, onValueChange: (String) -> Unit) {
+private fun Modifier.bringIntoViewOnFocus(): Modifier {
+    val requester = remember { BringIntoViewRequester() }
+    val scope = rememberCoroutineScope()
+    return this
+        .bringIntoViewRequester(requester)
+        .onFocusEvent { if (it.isFocused) scope.launch { requester.bringIntoView() } }
+}
+
+@Composable
+fun FormTextField(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    onValueChange: (String) -> Unit,
+) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
+        keyboardOptions = keyboardOptions,
         colors = drrrpFieldColors(),
-        modifier = modifier.fillMaxWidth().padding(top = 10.dp),
+        modifier = modifier.fillMaxWidth().padding(top = 10.dp).bringIntoViewOnFocus(),
     )
 }
 
@@ -80,7 +112,7 @@ fun FormPasswordField(label: String, value: String, modifier: Modifier = Modifie
         visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         colors = drrrpFieldColors(),
-        modifier = modifier.fillMaxWidth().padding(top = 10.dp),
+        modifier = modifier.fillMaxWidth().padding(top = 10.dp).bringIntoViewOnFocus(),
     )
 }
 
@@ -93,7 +125,7 @@ fun FormNumberField(label: String, value: String, modifier: Modifier = Modifier,
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         colors = drrrpFieldColors(),
-        modifier = modifier.fillMaxWidth().padding(top = 10.dp),
+        modifier = modifier.fillMaxWidth().padding(top = 10.dp).bringIntoViewOnFocus(),
     )
 }
 
@@ -106,7 +138,7 @@ fun FormDecimalField(label: String, value: String, modifier: Modifier = Modifier
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         colors = drrrpFieldColors(),
-        modifier = modifier.fillMaxWidth().padding(top = 10.dp),
+        modifier = modifier.fillMaxWidth().padding(top = 10.dp).bringIntoViewOnFocus(),
     )
 }
 

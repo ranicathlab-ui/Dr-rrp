@@ -4,13 +4,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -24,7 +26,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.postpci.drrrp.DrRrpApplication
 import com.postpci.drrrp.ui.common.DrRrpScaffold
 import com.postpci.drrrp.ui.common.FormPasswordField
-import com.postpci.drrrp.ui.common.drrrpFieldColors
+import com.postpci.drrrp.ui.common.FormTextField
 import com.postpci.drrrp.ui.theme.AccentYellowGold
 import com.postpci.drrrp.ui.theme.AlertRed
 import com.postpci.drrrp.ui.theme.SurfaceCard
@@ -54,7 +56,11 @@ fun AddCaregiverScreen(
     )
 
     DrRrpScaffold(title = "Add caregiver", showBackButton = true, onBack = onBack) { modifier ->
-        Column(modifier = modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
+        // verticalScroll + imePadding: with five fields (name, contact, email, password, confirm)
+        // plus the submit button, this content can be taller than the screen even before the
+        // keyboard shows up — see FormFields.kt's bringIntoViewOnFocus doc for the rest of the
+        // keyboard-avoidance story each field below gets for free.
+        Column(modifier = modifier.padding(horizontal = 20.dp, vertical = 16.dp).verticalScroll(rememberScrollState()).imePadding()) {
             val credentials = viewModel.inviteCredentials
             if (credentials != null) {
                 CaregiverInviteCredentialsCard(email = credentials.email, tempPassword = credentials.temporaryPassword, emailSent = credentials.emailSent)
@@ -66,32 +72,13 @@ fun AddCaregiverScreen(
                 return@DrRrpScaffold
             }
 
-            OutlinedTextField(
-                value = viewModel.name,
-                onValueChange = viewModel::onNameChange,
-                label = { Text("Caregiver name") },
-                singleLine = true,
-                colors = drrrpFieldColors(),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            OutlinedTextField(
-                value = viewModel.contact,
-                onValueChange = viewModel::onContactChange,
-                label = { Text("Contact number") },
-                singleLine = true,
-                colors = drrrpFieldColors(),
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-            )
-            OutlinedTextField(
-                value = viewModel.email,
-                onValueChange = viewModel::onEmailChange,
-                label = { Text("Email (optional)") },
-                placeholder = { Text("Leave blank if the caregiver has no email") },
-                singleLine = true,
+            FormTextField("Caregiver name", viewModel.name) { viewModel.onNameChange(it) }
+            FormTextField("Contact number", viewModel.contact) { viewModel.onContactChange(it) }
+            FormTextField(
+                "Email (optional — leave blank if the caregiver has no email)",
+                viewModel.email,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                colors = drrrpFieldColors(),
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-            )
+            ) { viewModel.onEmailChange(it) }
             FormPasswordField("Create password", viewModel.password, onValueChange = viewModel::onPasswordChange)
             FormPasswordField("Confirm password", viewModel.confirmPassword, onValueChange = viewModel::onConfirmPasswordChange)
             viewModel.errorMessage?.let {
