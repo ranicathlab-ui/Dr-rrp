@@ -13,6 +13,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.postpci.drrrp.ui.theme.BackgroundNearBlack
 import com.postpci.drrrp.ui.theme.HeaderDeepBlue
 import com.postpci.drrrp.ui.theme.TextPrimary
 import com.postpci.drrrp.ui.theme.appBackground
@@ -34,7 +35,7 @@ fun DrRrpScaffold(
 ) {
     Scaffold(
         modifier = modifier,
-        containerColor = Color.Transparent,
+        containerColor = BackgroundNearBlack,
         topBar = {
             TopAppBar(
                 title = { Text(title, color = TextPrimary) },

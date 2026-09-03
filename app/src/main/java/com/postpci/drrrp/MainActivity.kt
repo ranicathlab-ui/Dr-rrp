@@ -8,8 +8,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import com.postpci.drrrp.ui.navigation.DrRrpNavHost
+import com.postpci.drrrp.ui.theme.BackgroundNearBlack
 import com.postpci.drrrp.ui.theme.DrRrpTheme
 
 class MainActivity : ComponentActivity() {
@@ -22,9 +27,15 @@ class MainActivity : ComponentActivity() {
         requestNotificationPermissionIfNeeded()
         setContent {
             DrRrpTheme {
-                DrRrpNavHost(
-                    application = application as DrRrpApplication,
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(BackgroundNearBlack),
+                ) {
+                    DrRrpNavHost(
+                        application = application as DrRrpApplication,
+                    )
+                }
             }
         }
     }

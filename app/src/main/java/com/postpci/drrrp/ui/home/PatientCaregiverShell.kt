@@ -104,7 +104,7 @@ fun PatientCaregiverShell(
     }
 
     Scaffold(
-        containerColor = Color.Transparent,
+        containerColor = com.postpci.drrrp.ui.theme.BackgroundNearBlack,
         bottomBar = {
             NavigationBar(containerColor = HeaderDeepBlue) {
                 BottomTab.entries.forEach { tab ->
