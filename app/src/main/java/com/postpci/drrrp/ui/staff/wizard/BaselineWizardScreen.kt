@@ -153,7 +153,7 @@ private fun StepProgress(currentStep: Int) {
 }
 
 @Composable
-private fun InviteCredentialsCard(email: String, tempPassword: String, emailSent: Boolean) {
+private fun InviteCredentialsCard(email: String, tempPassword: String, emailSent: Boolean = false) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -164,12 +164,7 @@ private fun InviteCredentialsCard(email: String, tempPassword: String, emailSent
     ) {
         Text("Patient invite created", color = AccentYellowGold, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Text(
-            if (emailSent) {
-                "A password-setup email was sent to $email — the patient can use that link directly. " +
-                    "The temporary password below is a fallback if the email doesn't arrive."
-            } else {
-                "Share these with the patient — they'll set their own password on first login."
-            },
+            "Share these credentials with the patient — they'll use these to sign in and set their own password on first login.",
             color = TextSecondary,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),

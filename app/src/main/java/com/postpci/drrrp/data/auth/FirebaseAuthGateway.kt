@@ -175,8 +175,7 @@ class FirebaseAuthGateway(
         } catch (e: Exception) {
             throw IllegalStateException("createPatientInvite failed: ${e.message}", e)
         }
-        val emailSent = trySendPasswordResetEmail(email)
-        return InviteCredentials(response.patientId, response.email, response.temporaryPassword, emailSent)
+        return InviteCredentials(response.patientId, response.email, response.temporaryPassword, emailSent = false)
     }
 
     override suspend fun createCaregiverInvite(name: String, contact: String, patientId: String, email: String?, password: String): InviteCredentials {
@@ -185,22 +184,7 @@ class FirebaseAuthGateway(
         } catch (e: Exception) {
             throw IllegalStateException("createCaregiverInvite failed: ${e.message}", e)
         }
-        val emailSent = trySendPasswordResetEmail(email)
-        return InviteCredentials(response.patientId, response.email, response.temporaryPassword, emailSent)
-    }
-
-    /** Best-effort: a failed reset email never fails the invite itself — the on-screen temporary
-     *  password is always shown as a fallback (see InviteCredentials' doc). Uses the client SDK's
-     *  own "forgot password" mechanism against the just-created Firebase Auth account, which is
-     *  a free, built-in Firebase feature — no third-party email/SMS service involved. */
-    private suspend fun trySendPasswordResetEmail(email: String?): Boolean {
-        if (email.isNullOrBlank()) return false
-        return try {
-            auth.sendPasswordResetEmail(email).await()
-            true
-        } catch (e: Exception) {
-            false
-        }
+        return InviteCredentials(response.patientId, response.email, response.temporaryPassword, emailSent = false)
     }
 
     override suspend fun getIdToken(): String? =

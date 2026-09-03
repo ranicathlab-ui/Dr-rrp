@@ -95,7 +95,7 @@ fun AddCaregiverScreen(
 }
 
 @Composable
-private fun CaregiverInviteCredentialsCard(email: String, tempPassword: String, emailSent: Boolean) {
+private fun CaregiverInviteCredentialsCard(email: String, tempPassword: String, emailSent: Boolean = false) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -106,12 +106,7 @@ private fun CaregiverInviteCredentialsCard(email: String, tempPassword: String, 
     ) {
         Text("Caregiver invite created", color = AccentYellowGold, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Text(
-            if (emailSent) {
-                "A password-setup email was sent to $email — the caregiver can use that link directly. " +
-                    "The temporary password below is a fallback if the email doesn't arrive."
-            } else {
-                "Share these with the caregiver — they'll set their own password on first login."
-            },
+            "Share these credentials with the caregiver — they'll use these to sign in and set their own password on first login.",
             color = TextSecondary,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
