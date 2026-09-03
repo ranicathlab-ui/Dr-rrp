@@ -78,6 +78,30 @@ fun ProfileScreen(application: DrRrpApplication, patientId: String) {
             item { SectionCard("Labs & vitals at discharge") { LabsRows(b) } }
             item { SectionCard("Medications & follow-up") { MedsRows(b) } }
             item { SectionCard("Social") { SocialRows(b) } }
+            item {
+                SectionCard("Patient Education") {
+                    Text(
+                        "Watch stent care, diet, and cardiac recovery guidance videos by Dr. A. Rajaram Prasad, Cardiologist.",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(bottom = 10.dp),
+                    )
+                    Button(
+                        onClick = {
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(LegalLinks.YOUTUBE_CHANNEL_URL)).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            } catch (_: Exception) {}
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC0000), contentColor = Color.White),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Watch Videos on YouTube ▶", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
             item { LegalAndDataSection(application, patientId) }
         }
     }

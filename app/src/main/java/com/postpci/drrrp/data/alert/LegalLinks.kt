@@ -9,6 +9,7 @@ package com.postpci.drrrp.data.alert
 object LegalLinks {
     const val PRIVACY_POLICY_URL = "https://dr-rrp-aasai-backend.onrender.com/privacy-policy"
     const val TERMS_URL = "https://dr-rrp-aasai-backend.onrender.com/terms"
+    const val YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@dr.rajaramprasad_cardiologist"
 
     const val PRIVACY_POLICY_TEXT = """DR RRP — Privacy Policy
 Aasai Health Centre, Salem, Tamil Nadu, India (Dr. A. Rajaram Prasad)

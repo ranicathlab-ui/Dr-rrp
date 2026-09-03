@@ -53,6 +53,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.postpci.drrrp.DrRrpApplication
 import com.postpci.drrrp.data.alert.ClinicContact
+import com.postpci.drrrp.data.alert.LegalLinks
 import com.postpci.drrrp.data.local.entity.DailyEntryEntity
 import com.postpci.drrrp.data.model.AlertSeverity
 import com.postpci.drrrp.ui.common.DrRrpScaffold
@@ -309,12 +310,48 @@ fun TodayScreen(
                     }
                 }
             }
+
+            YouTubeGuidanceCard {
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(LegalLinks.YOUTUBE_CHANNEL_URL)).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                } catch (_: Exception) {}
+            }
         }
     }
 
     if (canLogEntries) {
         activeFieldSheet?.let { fieldKey ->
             LogEntrySheet(fieldKey, state.todayEntry, viewModel) { activeFieldSheet = null }
+        }
+    }
+}
+
+@Composable
+private fun YouTubeGuidanceCard(onOpenYouTube: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 20.dp, bottom = 8.dp)
+            .background(SurfaceCard, RoundedCornerShape(16.dp))
+            .border(1.dp, BorderHairline, RoundedCornerShape(16.dp))
+            .padding(16.dp),
+    ) {
+        Text("Doctor's Video Guidance", color = AccentYellowGold, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(
+            "Watch stent care, diet, and recovery guidance videos by Dr. A. Rajaram Prasad, Cardiologist",
+            color = TextSecondary,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+        )
+        Button(
+            onClick = onOpenYouTube,
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC0000), contentColor = Color.White),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Watch Videos on YouTube ▶", fontWeight = FontWeight.Bold)
         }
     }
 }
