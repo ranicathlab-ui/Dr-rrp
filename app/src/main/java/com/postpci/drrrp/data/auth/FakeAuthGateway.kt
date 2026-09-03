@@ -31,6 +31,12 @@ class FakeAuthGateway : AuthGateway {
     companion object {
         const val DEMO_STAFF_EMAIL = "staff@aasaihealthcentre.test"
         const val DEMO_STAFF_PASSWORD = "staff123"
+        const val DEMO_STAFF2_EMAIL = "staff2@aasaihealthcentre.test"
+        const val DEMO_STAFF2_PASSWORD = "staff123"
+        const val DEMO_STAFF3_EMAIL = "staff3@aasaihealthcentre.test"
+        const val DEMO_STAFF3_PASSWORD = "staff123"
+        const val DEMO_STAFF4_EMAIL = "staff4@aasaihealthcentre.test"
+        const val DEMO_STAFF4_PASSWORD = "staff123"
         const val DEMO_PATIENT_EMAIL = "patient@example.test"
         const val DEMO_CAREGIVER_EMAIL = "caregiver@example.test"
         const val DEMO_PATIENT_ID = "demo-patient-1"
@@ -41,7 +47,28 @@ class FakeAuthGateway : AuthGateway {
             uid = "staff-1",
             email = DEMO_STAFF_EMAIL,
             password = DEMO_STAFF_PASSWORD,
-            displayName = "Clinic Staff",
+            displayName = "Clinic Staff 1",
+            role = UserRole.STAFF,
+        )
+        accounts[DEMO_STAFF2_EMAIL] = FakeAccount(
+            uid = "staff-2",
+            email = DEMO_STAFF2_EMAIL,
+            password = DEMO_STAFF2_PASSWORD,
+            displayName = "Clinic Staff 2",
+            role = UserRole.STAFF,
+        )
+        accounts[DEMO_STAFF3_EMAIL] = FakeAccount(
+            uid = "staff-3",
+            email = DEMO_STAFF3_EMAIL,
+            password = DEMO_STAFF3_PASSWORD,
+            displayName = "Clinic Staff 3",
+            role = UserRole.STAFF,
+        )
+        accounts[DEMO_STAFF4_EMAIL] = FakeAccount(
+            uid = "staff-4",
+            email = DEMO_STAFF4_EMAIL,
+            password = DEMO_STAFF4_PASSWORD,
+            displayName = "Clinic Staff 4",
             role = UserRole.STAFF,
         )
         accounts[DEMO_PATIENT_EMAIL] = FakeAccount(

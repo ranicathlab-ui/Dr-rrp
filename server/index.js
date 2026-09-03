@@ -302,6 +302,29 @@ app.post("/invite/patient", asyncHandler(async (req, res) => {
   res.status(200).json({ patientId: userRecord.uid, email, temporaryPassword: req.body?.password });
 }));
 
+app.post("/invite/staff", asyncHandler(async (req, res) => {
+  if (req.role !== "STAFF") return res.status(403).json({ error: "Only staff can create staff accounts." });
+  const name = (req.body?.name || "").trim();
+  const password = (req.body?.password || "").trim();
+  const email = (req.body?.email || "").trim();
+  if (!name) return res.status(400).json({ error: "name is required." });
+  if (!email) return res.status(400).json({ error: "email is required." });
+
+  const created = await createInviteUser(res, email, name, password);
+  if (!created) return;
+  const { userRecord } = created;
+
+  await getFirestore().collection(USERS_COLLECTION).doc(userRecord.uid).set({
+    role: "STAFF",
+    displayName: name,
+    mustChangePassword: false,
+    createdAt: new Date().toISOString(),
+    createdBy: req.uid,
+  });
+
+  res.status(200).json({ staffId: userRecord.uid, email, temporaryPassword: password });
+}));
+
 app.post("/invite/caregiver", asyncHandler(async (req, res) => {
   if (req.role !== "STAFF") return res.status(403).json({ error: "Only staff can create invites." });
   const name = (req.body?.name || "").trim();
