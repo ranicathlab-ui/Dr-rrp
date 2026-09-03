@@ -38,6 +38,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.postpci.drrrp.DrRrpApplication
 import com.postpci.drrrp.ui.common.bringIntoViewOnFocus
+import com.postpci.drrrp.ui.common.drrrpFieldColors
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import com.postpci.drrrp.ui.theme.AccentYellowGold
@@ -241,12 +242,4 @@ private fun FirstLoginSetupForm(
 }
 
 @Composable
-private fun drrrpTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedTextColor = TextPrimary,
-    unfocusedTextColor = TextPrimary,
-    focusedBorderColor = AccentYellowGold,
-    unfocusedBorderColor = BorderHairline,
-    focusedLabelColor = AccentYellowGold,
-    unfocusedLabelColor = TextSecondary,
-    cursorColor = AccentYellowGold,
-)
+private fun drrrpTextFieldColors() = drrrpFieldColors()

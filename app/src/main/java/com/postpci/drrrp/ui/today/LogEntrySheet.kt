@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.postpci.drrrp.ui.common.bringIntoViewOnFocus
+import com.postpci.drrrp.ui.common.drrrpFieldColors
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -102,15 +103,7 @@ private fun InlineFlag(message: String?) {
 }
 
 @Composable
-private fun numberFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedTextColor = TextPrimary,
-    unfocusedTextColor = TextPrimary,
-    focusedBorderColor = AccentYellowGold,
-    unfocusedBorderColor = BorderHairline,
-    focusedLabelColor = AccentYellowGold,
-    unfocusedLabelColor = TextSecondary,
-    cursorColor = AccentYellowGold,
-)
+private fun numberFieldColors() = drrrpFieldColors()
 
 @Composable
 private fun InlineValidationWarning(message: String) {

@@ -42,7 +42,7 @@ private val LightColorScheme = lightColorScheme(
     onSurface = TextPrimaryLight,
     surfaceVariant = Color(0xFFF1F5F9),
     onSurfaceVariant = TextSecondaryLight,
-    outline = LightBorder,
+    outline = Color(0xFFCBD5E1),
     error = AlertRoseRed,
     onError = Color.White,
 )
