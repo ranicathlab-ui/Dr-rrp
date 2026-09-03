@@ -66,6 +66,9 @@ import com.postpci.drrrp.ui.theme.TextPrimary
 import com.postpci.drrrp.data.schedule.MonitoringSchedule
 import com.postpci.drrrp.ui.theme.TextSecondary
 
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+
 /**
  * The core loop: greeting + day badge, alert banner, today's due vitals grid, medication
  * checklist (DAPT highlighted), and the finish button. Used for both the patient's own view and
@@ -86,7 +89,7 @@ fun TodayScreen(
         // ViewModelStore key collisions across sibling ViewModels sharing the same store.
         key = "Today:$patientId",
         factory = viewModelFactory {
-            initializer { TodayViewModel(application.database, application.patientCareRepository, application.syncManager, patientId, loggedByCaregiver) }
+            initializer { TodayViewModel(application.database, application.patientCareRepository, application.messagingRepository, application.syncManager, patientId, loggedByCaregiver) }
         },
     )
     val state by viewModel.uiState.collectAsState()
@@ -96,10 +99,23 @@ fun TodayScreen(
     DrRrpScaffold(
         title = "Today",
         actions = {
-            IconButton(onClick = onOpenMessages) {
-                Icon(Icons.Filled.Email, contentDescription = "Messages", tint = TextPrimary)
+            BadgedBox(
+                badge = {
+                    if (state.unreadMessageCount > 0) {
+                        Badge(
+                            containerColor = AlertRed,
+                            contentColor = Color.White,
+                        ) {
+                            Text(if (state.unreadMessageCount > 99) "99+" else state.unreadMessageCount.toString())
+                        }
+                    }
+                },
+            ) {
+                IconButton(onClick = onOpenMessages) {
+                    Icon(Icons.Filled.Email, contentDescription = "Messages", tint = MaterialTheme.colorScheme.onSurface)
+                }
             }
-            TextButton(onClick = onSignOut) { Text("Sign out", color = TextPrimary) }
+            TextButton(onClick = onSignOut) { Text("Sign out", color = MaterialTheme.colorScheme.onSurface) }
         },
     ) { modifier ->
         if (state.isLoading) {
@@ -360,16 +376,16 @@ private fun YouTubeGuidanceCard(onOpenYouTube: () -> Unit) {
 private fun GreetingHeader(state: TodayUiState) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.weight(1f)) {
-            Text("Hi, ${state.patientName.ifBlank { "there" }}", style = MaterialTheme.typography.headlineSmall, color = TextPrimary)
-            Text("Aasai Health Centre, Salem", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+            Text("Hi, ${state.patientName.ifBlank { "there" }}", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
+            Text("Aasai Health Centre, Salem", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         state.dayNPostPci?.let { day ->
             Box(
                 modifier = Modifier
-                    .background(AccentYellowGold, RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(20.dp))
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
-                Text("Day $day post-PCI", color = Color(0xFF241A00), fontWeight = FontWeight.Bold, fontFamily = IBMPlexMono)
+                Text("Day $day post-PCI", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold, fontFamily = IBMPlexMono)
             }
         }
     }

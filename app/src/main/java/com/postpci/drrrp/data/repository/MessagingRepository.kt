@@ -10,6 +10,10 @@ class MessagingRepository(private val messageDao: MessageDao, private val onLoca
 
     fun observePatientIdsWithUnreadForStaff() = messageDao.observePatientIdsWithUnreadForStaff()
 
+    fun observeUnreadCountForPatient(patientId: String) = messageDao.observeUnreadCountForPatient(patientId)
+
+    fun observeTotalUnreadCountForStaff() = messageDao.observeTotalUnreadCountForStaff()
+
     suspend fun send(patientId: String, senderRole: UserRole, senderId: String, senderName: String, text: String) {
         val now = System.currentTimeMillis()
         messageDao.upsert(

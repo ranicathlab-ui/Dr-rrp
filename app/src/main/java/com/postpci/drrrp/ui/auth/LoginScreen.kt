@@ -71,13 +71,13 @@ fun LoginScreen(application: DrRrpApplication, modifier: Modifier = Modifier) {
         Text(
             text = "Dr. A. Rajaram Prasad",
             style = MaterialTheme.typography.headlineMedium,
-            color = AccentYellowGold,
+            color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold,
         )
         Text(
             text = "Recovery monitoring for Aasai Health Centre, Salem",
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 28.dp, top = 4.dp),
         )
 

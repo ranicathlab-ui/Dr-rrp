@@ -68,13 +68,13 @@ fun DisclaimerScreen(application: DrRrpApplication, onAcknowledged: () -> Unit) 
         Text(
             text = "Before you continue",
             style = MaterialTheme.typography.headlineMedium,
-            color = AccentYellowGold,
+            color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold,
         )
         Text(
             text = "DR RRP — Aasai Health Centre, Salem",
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp, bottom = 24.dp),
         )
 
@@ -84,7 +84,7 @@ fun DisclaimerScreen(application: DrRrpApplication, onAcknowledged: () -> Unit) 
                     "recovery — it facilitates follow-up between visits. It does not provide a " +
                     "diagnosis and does not replace in-person clinical evaluation or independent " +
                     "emergency triage.",
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -94,7 +94,7 @@ fun DisclaimerScreen(application: DrRrpApplication, onAcknowledged: () -> Unit) 
                 "This app is not an automated real-time emergency response system. If you " +
                     "experience severe chest pain, extreme breathlessness, sudden cold sweats, or " +
                     "loss of consciousness, do not rely solely on an in-app message.",
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(bottom = 8.dp),
             )

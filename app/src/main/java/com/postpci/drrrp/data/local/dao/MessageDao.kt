@@ -25,6 +25,12 @@ interface MessageDao {
     @Query("SELECT DISTINCT patientId FROM message")
     fun observePatientIdsWithMessages(): Flow<List<String>>
 
+    @Query("SELECT COUNT(*) FROM message WHERE patientId = :patientId AND readByPatient = 0 AND senderRole = 'STAFF'")
+    fun observeUnreadCountForPatient(patientId: String): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM message WHERE readByStaff = 0 AND senderRole != 'STAFF'")
+    fun observeTotalUnreadCountForStaff(): Flow<Int>
+
     @Query("UPDATE message SET readByStaff = 1 WHERE patientId = :patientId AND readByStaff = 0")
     suspend fun markReadByStaff(patientId: String)
 

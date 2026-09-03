@@ -17,4 +17,5 @@ data class TodayUiState(
     val todayEntry: DailyEntryEntity? = null,
     val medications: List<MedItem> = emptyList(),
     val unreviewedAlerts: List<AlertEntity> = emptyList(),
+    val unreadMessageCount: Int = 0,
 )

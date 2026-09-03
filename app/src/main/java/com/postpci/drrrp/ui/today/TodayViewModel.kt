@@ -32,9 +32,12 @@ import java.time.LocalDate
  * state; the due-fields grid comes straight from [MonitoringSchedule] rather than being
  * hardcoded here.
  */
+import com.postpci.drrrp.data.repository.MessagingRepository
+
 class TodayViewModel(
     private val database: DrRrpDatabase,
     private val repository: PatientCareRepository,
+    private val messagingRepository: MessagingRepository,
     private val syncManager: SyncManager,
     private val patientId: String,
     private val loggedByCaregiver: Boolean,
@@ -63,7 +66,8 @@ class TodayViewModel(
         database.patientBaselineDao().observe(patientId),
         repository.observeTodayEntry(patientId),
         repository.observeUnreviewedAlerts(patientId),
-    ) { baseline, entry, alerts ->
+        messagingRepository.observeUnreadCountForPatient(patientId),
+    ) { baseline, entry, alerts, unreadCount ->
         val today = LocalDate.now()
         val pciDate = baseline?.procedural?.pciDate
         val dayN = pciDate?.let { MonitoringSchedule.daysPostPci(it, today) }
@@ -79,6 +83,7 @@ class TodayViewModel(
             todayEntry = entry,
             medications = baseline?.let(::medicationsFor).orEmpty(),
             unreviewedAlerts = alerts,
+            unreadMessageCount = unreadCount,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TodayUiState())
 
