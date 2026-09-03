@@ -33,9 +33,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.postpci.drrrp.DrRrpApplication
+import com.postpci.drrrp.data.local.entity.DailyEntryEntity
+import com.postpci.drrrp.data.model.NyhaClass
 import com.postpci.drrrp.data.schedule.MonitoringSchedule
 import com.postpci.drrrp.ui.common.DrRrpScaffold
 import com.postpci.drrrp.ui.theme.AccentYellowGold
+import com.postpci.drrrp.ui.theme.AlertRed
 import com.postpci.drrrp.ui.theme.BorderHairline
 import com.postpci.drrrp.ui.theme.IBMPlexMono
 import com.postpci.drrrp.ui.theme.SurfaceCard
@@ -130,26 +133,7 @@ fun PatientDetailScreen(
             }
 
             items(viewModel.entries, key = { it.id }) { entry ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 10.dp)
-                        .background(SurfaceCard, RoundedCornerShape(14.dp))
-                        .border(1.dp, BorderHairline, RoundedCornerShape(14.dp))
-                        .padding(14.dp),
-                ) {
-                    Text(entry.entryDate.toString(), color = TextSecondary, style = MaterialTheme.typography.labelMedium)
-                    Text(
-                        "HR ${entry.restingHeartRate ?: "—"}  BP ${entry.bpSystolic ?: "—"}/${entry.bpDiastolic ?: "—"}  " +
-                            "SpO2 ${entry.spo2 ?: "—"}  Wt ${entry.weightKg ?: "—"}kg",
-                        color = TextPrimary,
-                        fontFamily = IBMPlexMono,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    if (entry.loggedByCaregiver) {
-                        Text("Logged by caregiver", color = TextSecondary, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 4.dp))
-                    }
-                }
+                DailyEntryCard(entry)
             }
 
             item {
@@ -210,5 +194,121 @@ private fun CaregiversCard(caregivers: List<com.postpci.drrrp.data.sync.dto.Care
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun DailyEntryCard(entry: DailyEntryEntity) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 10.dp)
+            .background(SurfaceCard, RoundedCornerShape(14.dp))
+            .border(1.dp, BorderHairline, RoundedCornerShape(14.dp))
+            .padding(14.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                entry.entryDate.toString(),
+                color = TextSecondary,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            if (entry.loggedByCaregiver) {
+                Text(
+                    "Logged by caregiver",
+                    color = AccentYellowGold,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = IBMPlexMono,
+                )
+            }
+        }
+
+        // Vitals Row
+        Text(
+            "HR ${entry.restingHeartRate ?: "—"} bpm  ·  BP ${entry.bpSystolic ?: "—"}/${entry.bpDiastolic ?: "—"} mmHg\n" +
+                "SpO2 ${entry.spo2 ?: "—"}%  ·  Weight ${entry.weightKg ?: "—"} kg",
+            color = TextPrimary,
+            fontFamily = IBMPlexMono,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+
+        // Detailed Logged Sections
+        Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            // Chest Pain
+            if (entry.chestPainCount != null) {
+                val typeStr = entry.chestPainType?.let { " (${it.name.lowercase()})" } ?: ""
+                LogDetailRow("Chest Pain", "${entry.chestPainCount} episode(s)$typeStr", isAlert = entry.chestPainCount > 0)
+            }
+
+            // Breathlessness
+            if (entry.nyhaClass != null) {
+                LogDetailRow("Breathlessness", "NYHA Class ${entry.nyhaClass.name}", isAlert = entry.nyhaClass != NyhaClass.I)
+            }
+
+            // Access Site Check
+            val accessSymptoms = listOfNotNull(
+                "Bleeding".takeIf { entry.accessSiteBleeding == true },
+                "Swelling".takeIf { entry.accessSiteSwelling == true },
+                "Pain".takeIf { entry.accessSitePain == true },
+                "Discolouration".takeIf { entry.accessSiteDiscolouration == true },
+            )
+            if (entry.accessSiteBleeding != null || entry.accessSiteSwelling != null || entry.accessSitePain != null || entry.accessSiteDiscolouration != null) {
+                val siteText = if (accessSymptoms.isNotEmpty()) accessSymptoms.joinToString(", ") else "Normal (no symptoms)"
+                LogDetailRow("Access Site", siteText, isAlert = accessSymptoms.isNotEmpty())
+            }
+
+            // Medications
+            if (entry.daptTaken != null || !entry.medicationsTaken.isNullOrBlank()) {
+                val daptText = when (entry.daptTaken) {
+                    true -> "DAPT taken ✓"
+                    false -> "DAPT NOT taken ✗"
+                    null -> ""
+                }
+                val medsText = entry.medicationsTaken?.takeIf { it.isNotBlank() }?.let { "Meds: $it" } ?: ""
+                val fullMeds = listOf(daptText, medsText).filter { it.isNotBlank() }.joinToString("  ·  ")
+                LogDetailRow("Medications", fullMeds, isAlert = entry.daptTaken == false)
+            }
+
+            // Activity
+            if (entry.stepsOrMinutesWalked != null) {
+                val symptomText = entry.symptomThatStoppedActivity?.takeIf { it.isNotBlank() }?.let { " (Stopped by: $it)" } ?: ""
+                LogDetailRow("Activity", "${entry.stepsOrMinutesWalked} mins/steps$symptomText")
+            }
+
+            // Symptom Flags
+            val symptomFlags = listOfNotNull(
+                "Palpitations".takeIf { entry.palpitations == true },
+                "Syncope (fainting)".takeIf { entry.syncope == true },
+                "Near-syncope".takeIf { entry.nearSyncope == true },
+            )
+            if (entry.palpitations != null || entry.syncope != null || entry.nearSyncope != null) {
+                val flagsText = if (symptomFlags.isNotEmpty()) symptomFlags.joinToString(", ") else "None"
+                LogDetailRow("Symptoms", flagsText, isAlert = symptomFlags.isNotEmpty())
+            }
+        }
+    }
+}
+
+@Composable
+private fun LogDetailRow(label: String, value: String, isAlert: Boolean = false) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
+        Text(
+            "$label: ",
+            color = TextSecondary,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            value,
+            color = if (isAlert) AlertRed else TextPrimary,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = if (isAlert) FontWeight.Bold else FontWeight.Normal,
+        )
     }
 }

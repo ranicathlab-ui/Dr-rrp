@@ -94,29 +94,44 @@ class DrRrpApplication : Application(), Configuration.Provider {
         applicationScope.launch {
             authGateway.currentUser.collect { user ->
                 if (user == null) return@collect
-                val token = try {
-                    FirebaseMessaging.getInstance().token.await()
-                } catch (e: Exception) {
-                    null
-                }
-                if (token != null) registerPushToken(token)
+                ensurePushTokenRegistered()
             }
         }
     }
 
     /** Called by [DrRrpMessagingService.onNewToken] when FCM rotates the device's token. */
     fun onFcmTokenRefreshed(token: String) {
-        if (authGateway.currentUser.value == null) return
-        applicationScope.launch { registerPushToken(token) }
+        applicationScope.launch {
+            if (authGateway.currentUser.value != null) {
+                registerPushToken(token)
+            }
+        }
+    }
+
+    private fun ensurePushTokenRegistered() {
+        applicationScope.launch {
+            var attempts = 0
+            while (attempts < 5 && authGateway.currentUser.value != null) {
+                try {
+                    val token: String? = FirebaseMessaging.getInstance().token.await()
+                    if (!token.isNullOrBlank()) {
+                        syncApiService.registerDevice(DeviceRegisterRequest(token))
+                        break
+                    }
+                } catch (_: Exception) {
+                    // Retry after delay
+                }
+                attempts++
+                kotlinx.coroutines.delay(2000L * attempts)
+            }
+        }
     }
 
     private suspend fun registerPushToken(token: String) {
         try {
             syncApiService.registerDevice(DeviceRegisterRequest(token))
-        } catch (e: Exception) {
-            // Best-effort: push just won't work until the next sign-in or token-refresh retry —
-            // there's no dedicated retry queue for this one REST call (unlike the Room-backed
-            // sync queue SyncManager drains).
+        } catch (_: Exception) {
+            // Best-effort
         }
     }
 }
