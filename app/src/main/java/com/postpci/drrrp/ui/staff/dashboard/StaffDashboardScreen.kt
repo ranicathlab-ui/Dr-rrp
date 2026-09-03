@@ -53,6 +53,7 @@ fun StaffDashboardScreen(
     onSignOut: () -> Unit,
     onAddPatient: () -> Unit,
     onOpenPatient: (String) -> Unit,
+    onOpenMessaging: (String) -> Unit = {},
 ) {
     val viewModel: StaffDashboardViewModel = viewModel(
         factory = viewModelFactory { initializer { StaffDashboardViewModel(application.database, application.syncApiService) } },
@@ -109,7 +110,11 @@ fun StaffDashboardScreen(
             } else {
                 LazyColumn {
                     items(state.patients, key = { it.patientId }) { patient ->
-                        PatientCard(patient) { onOpenPatient(patient.patientId) }
+                        PatientCard(
+                            patient = patient,
+                            onClick = { onOpenPatient(patient.patientId) },
+                            onOpenMessaging = { onOpenMessaging(patient.patientId) },
+                        )
                     }
                 }
             }
@@ -121,7 +126,11 @@ fun StaffDashboardScreen(
 private fun rememberCoroutineScopeCompat() = androidx.compose.runtime.rememberCoroutineScope()
 
 @Composable
-private fun PatientCard(patient: PatientSummary, onClick: () -> Unit) {
+private fun PatientCard(
+    patient: PatientSummary,
+    onClick: () -> Unit,
+    onOpenMessaging: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -143,18 +152,45 @@ private fun PatientCard(patient: PatientSummary, onClick: () -> Unit) {
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(top = 2.dp),
         )
-        Row(modifier = Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            when (patient.lastAlertSeverity) {
-                AlertSeverity.EMERGENCY -> Text("● EMERGENCY", color = AlertRed, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-                AlertSeverity.ROUTINE -> Text("● Flagged", color = AlertRed, style = MaterialTheme.typography.labelLarge)
-                AlertSeverity.INFO, null -> Text("No active alerts", color = TextSecondary, style = MaterialTheme.typography.labelLarge)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f, fill = false)) {
+                when (patient.lastAlertSeverity) {
+                    AlertSeverity.EMERGENCY -> Text("● EMERGENCY", color = AlertRed, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    AlertSeverity.ROUTINE -> Text("● Flagged", color = AlertRed, style = MaterialTheme.typography.labelLarge)
+                    AlertSeverity.INFO, null -> Text("No active alerts", color = TextSecondary, style = MaterialTheme.typography.labelLarge)
+                }
+                if (patient.hasMissedEntry) {
+                    Text(
+                        "  ·  Missed entry",
+                        color = StatusInfo,
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+                if (patient.hasUnreadMessages) {
+                    Text(
+                        "  ·  ✉ New msg",
+                        color = AccentYellowGold,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                } else if (patient.hasMessages) {
+                    Text(
+                        "  ·  ✉ Messages",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
             }
-            if (patient.hasMissedEntry) {
-                Text(
-                    "  ·  Missed entry",
-                    color = StatusInfo,
-                    style = MaterialTheme.typography.labelLarge,
-                )
+
+            TextButton(
+                onClick = onOpenMessaging,
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+            ) {
+                Text("Message ✉", color = AccentYellowGold, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             }
         }
     }

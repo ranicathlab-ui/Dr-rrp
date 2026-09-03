@@ -60,6 +60,7 @@ fun StaffShell(application: DrRrpApplication) {
             onSignOut = { scope.launch { application.authGateway.signOut() } },
             onAddPatient = { screen = StaffScreen.Wizard(null) },
             onOpenPatient = { screen = StaffScreen.PatientDetail(it) },
+            onOpenMessaging = { screen = StaffScreen.Messaging(it) },
         )
         is StaffScreen.PatientDetail -> PatientDetailScreen(
             application = application,

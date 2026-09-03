@@ -3,6 +3,8 @@ package com.postpci.drrrp.ui.staff.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.postpci.drrrp.data.local.DrRrpDatabase
+import com.postpci.drrrp.data.local.entity.AlertEntity
+import com.postpci.drrrp.data.local.entity.PatientBaselineEntity
 import com.postpci.drrrp.data.model.AlertSeverity
 import com.postpci.drrrp.data.schedule.MonitoringSchedule
 import com.postpci.drrrp.data.sync.SyncApiService
@@ -30,9 +32,11 @@ data class PatientSummary(
      * [StaffDashboardViewModel]'s offline fallback.
      */
     val hasMissedEntry: Boolean,
+    val hasMessages: Boolean = false,
+    val hasUnreadMessages: Boolean = false,
 )
 
-enum class AlertStatusFilter { ALL, EMERGENCY, ROUTINE, NONE }
+enum class AlertStatusFilter { ALL, EMERGENCY, ROUTINE, MESSAGES, NONE }
 
 data class StaffDashboardUiState(
     val isLoading: Boolean = true,
@@ -83,10 +87,27 @@ class StaffDashboardViewModel(
         remotePatients,
         database.patientBaselineDao().observeAll(),
         database.alertDao().observeMostRecentPerPatient(),
+        database.messageDao().observePatientIdsWithMessages(),
+        database.messageDao().observePatientIdsWithUnreadForStaff(),
         searchQuery,
         statusFilter,
-    ) { remote, baselines, recentAlerts, query, filter ->
+    ) { flows: Array<Any?> ->
+        @Suppress("UNCHECKED_CAST")
+        val remote = flows[0] as List<PatientListItemDto>?
+        @Suppress("UNCHECKED_CAST")
+        val baselines = flows[1] as List<PatientBaselineEntity>
+        @Suppress("UNCHECKED_CAST")
+        val recentAlerts = flows[2] as List<AlertEntity>
+        @Suppress("UNCHECKED_CAST")
+        val messagePatientIds = flows[3] as List<String>
+        @Suppress("UNCHECKED_CAST")
+        val unreadPatientIds = flows[4] as List<String>
+        val query = flows[5] as String
+        val filter = flows[6] as AlertStatusFilter
+
         val today = LocalDate.now()
+        val messageIdsSet = messagePatientIds.toSet()
+        val unreadIdsSet = unreadPatientIds.toSet()
 
         val summaries = if (remote != null) {
             remote.map { item ->
@@ -98,6 +119,8 @@ class StaffDashboardViewModel(
                     lastAlertSeverity = item.lastAlertSeverity?.let { AlertSeverity.valueOf(it) },
                     lastAlertAt = item.lastAlertAt,
                     hasMissedEntry = item.hasMissedEntry,
+                    hasMessages = item.patientId in messageIdsSet,
+                    hasUnreadMessages = item.patientId in unreadIdsSet,
                 )
             }
         } else {
@@ -118,6 +141,8 @@ class StaffDashboardViewModel(
                     lastAlertSeverity = alert?.severity,
                     lastAlertAt = alert?.createdAt,
                     hasMissedEntry = dueFieldsToday.isNotEmpty() && daysSinceLastEntry >= 1,
+                    hasMessages = baseline.patientId in messageIdsSet,
+                    hasUnreadMessages = baseline.patientId in unreadIdsSet,
                 )
             }
         }
@@ -129,6 +154,7 @@ class StaffDashboardViewModel(
                     AlertStatusFilter.ALL -> true
                     AlertStatusFilter.EMERGENCY -> s.lastAlertSeverity == AlertSeverity.EMERGENCY
                     AlertStatusFilter.ROUTINE -> s.lastAlertSeverity == AlertSeverity.ROUTINE
+                    AlertStatusFilter.MESSAGES -> s.hasMessages || s.hasUnreadMessages
                     AlertStatusFilter.NONE -> s.lastAlertSeverity == null
                 }
             }
