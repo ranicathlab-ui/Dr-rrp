@@ -55,10 +55,6 @@ const USERS_COLLECTION = "users";
 const PAGE_SIZE_DEFAULT = 20;
 const INVITE_EMAIL_DOMAIN = "invite.drrrp.test"; // matches FakeAuthGateway's synthetic-email domain
 
-function generateTempPassword() {
-  return crypto.randomBytes(5).toString("hex");
-}
-
 function syntheticEmail(name) {
   const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.+|\.+$/g, "");
   const suffix = crypto.randomBytes(2).toString("hex");
@@ -69,12 +65,19 @@ function syntheticEmail(name) {
 // call on it; Firebase itself does the real validation and is the source of truth.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const MIN_PASSWORD_LENGTH = 6; // matches Firebase Auth's own minimum
+
 /** Creates the Firebase Auth user for an invite, using [rawEmail] as the real login address when
  *  it's a plausible email, falling back to a synthetic `@invite.drrrp.test` one otherwise (see
- *  Demographics.email's doc for why that's a deliberate, not an error, path). Surfaces Firebase's
- *  own "that email is already registered" error as a clean 409 instead of the generic 500 the
- *  route would otherwise fall through to. */
-async function createInviteUser(res, rawEmail, name, temporaryPassword) {
+ *  Demographics.email's doc for why that's a deliberate, not an error, path). [password] is
+ *  staff-chosen (see AuthGateway.createPatientInvite's doc for why), not generated here. Surfaces
+ *  Firebase's own "that email is already registered" error as a clean 409 instead of the generic
+ *  500 the route would otherwise fall through to. */
+async function createInviteUser(res, rawEmail, name, password) {
+  if (!password || password.length < MIN_PASSWORD_LENGTH) {
+    res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` });
+    return null;
+  }
   const trimmed = (rawEmail || "").trim();
   const usingRealEmail = trimmed.length > 0;
   if (usingRealEmail && !EMAIL_PATTERN.test(trimmed)) {
@@ -83,7 +86,7 @@ async function createInviteUser(res, rawEmail, name, temporaryPassword) {
   }
   const email = usingRealEmail ? trimmed : syntheticEmail(name);
   try {
-    const userRecord = await getAuth().createUser({ email, password: temporaryPassword, displayName: name });
+    const userRecord = await getAuth().createUser({ email, password, displayName: name });
     return { userRecord, email };
   } catch (e) {
     if (e?.code === "auth/email-already-exists") {
@@ -161,8 +164,7 @@ app.post("/invite/patient", asyncHandler(async (req, res) => {
   const name = (req.body?.name || "").trim();
   if (!name) return res.status(400).json({ error: "name is required." });
 
-  const temporaryPassword = generateTempPassword();
-  const created = await createInviteUser(res, req.body?.email, name, temporaryPassword);
+  const created = await createInviteUser(res, req.body?.email, name, req.body?.password);
   if (!created) return; // createInviteUser already sent the error response
   const { userRecord, email } = created;
 
@@ -174,7 +176,7 @@ app.post("/invite/patient", asyncHandler(async (req, res) => {
     createdBy: req.uid,
   });
 
-  res.status(200).json({ patientId: userRecord.uid, email, temporaryPassword });
+  res.status(200).json({ patientId: userRecord.uid, email, temporaryPassword: req.body?.password });
 }));
 
 app.post("/invite/caregiver", asyncHandler(async (req, res) => {
@@ -185,8 +187,7 @@ app.post("/invite/caregiver", asyncHandler(async (req, res) => {
   if (!name) return res.status(400).json({ error: "name is required." });
   if (!linkedPatientId) return res.status(400).json({ error: "patientId is required." });
 
-  const temporaryPassword = generateTempPassword();
-  const created = await createInviteUser(res, req.body?.email, name, temporaryPassword);
+  const created = await createInviteUser(res, req.body?.email, name, req.body?.password);
   if (!created) return; // createInviteUser already sent the error response
   const { userRecord, email } = created;
 
@@ -203,7 +204,7 @@ app.post("/invite/caregiver", asyncHandler(async (req, res) => {
 
   // Field is named patientId to match the Android InviteCredentials shape (it's actually the
   // new caregiver's own uid — see FakeAuthGateway.createCaregiverInvite for the same convention).
-  res.status(200).json({ patientId: userRecord.uid, email, temporaryPassword });
+  res.status(200).json({ patientId: userRecord.uid, email, temporaryPassword: req.body?.password });
 }));
 
 // ============================================================================================

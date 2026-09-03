@@ -143,9 +143,9 @@ class FirebaseAuthGateway(
 
     // contact isn't sent to the backend today — there's no SMS/notification channel yet to use
     // it for, same as FakeAuthGateway. It stays in the interface for when that lands.
-    override suspend fun createPatientInvite(name: String, contact: String, email: String?): InviteCredentials {
+    override suspend fun createPatientInvite(name: String, contact: String, email: String?, password: String): InviteCredentials {
         val response = try {
-            inviteApi.createPatientInvite(CreatePatientInviteRequest(name, email?.ifBlank { null }))
+            inviteApi.createPatientInvite(CreatePatientInviteRequest(name, password, email?.ifBlank { null }))
         } catch (e: Exception) {
             throw IllegalStateException("createPatientInvite failed: ${e.message}", e)
         }
@@ -153,9 +153,9 @@ class FirebaseAuthGateway(
         return InviteCredentials(response.patientId, response.email, response.temporaryPassword, emailSent)
     }
 
-    override suspend fun createCaregiverInvite(name: String, contact: String, patientId: String, email: String?): InviteCredentials {
+    override suspend fun createCaregiverInvite(name: String, contact: String, patientId: String, email: String?, password: String): InviteCredentials {
         val response = try {
-            inviteApi.createCaregiverInvite(CreateCaregiverInviteRequest(name, patientId, contact.ifBlank { null }, email?.ifBlank { null }))
+            inviteApi.createCaregiverInvite(CreateCaregiverInviteRequest(name, patientId, password, contact.ifBlank { null }, email?.ifBlank { null }))
         } catch (e: Exception) {
             throw IllegalStateException("createCaregiverInvite failed: ${e.message}", e)
         }

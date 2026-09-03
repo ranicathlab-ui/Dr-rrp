@@ -6,10 +6,10 @@ import retrofit2.http.POST
 
 /** Wire request/response shapes for the two invite endpoints below. */
 @Serializable
-data class CreatePatientInviteRequest(val name: String, val email: String? = null)
+data class CreatePatientInviteRequest(val name: String, val password: String, val email: String? = null)
 
 @Serializable
-data class CreateCaregiverInviteRequest(val name: String, val patientId: String, val contactNumber: String? = null, val email: String? = null)
+data class CreateCaregiverInviteRequest(val name: String, val patientId: String, val password: String, val contactNumber: String? = null, val email: String? = null)
 
 @Serializable
 data class InviteResponse(val patientId: String, val email: String, val temporaryPassword: String)

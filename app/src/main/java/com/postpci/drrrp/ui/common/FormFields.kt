@@ -71,6 +71,20 @@ fun FormTextField(label: String, value: String, modifier: Modifier = Modifier, o
 }
 
 @Composable
+fun FormPasswordField(label: String, value: String, modifier: Modifier = Modifier, onValueChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        singleLine = true,
+        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        colors = drrrpFieldColors(),
+        modifier = modifier.fillMaxWidth().padding(top = 10.dp),
+    )
+}
+
+@Composable
 fun FormNumberField(label: String, value: String, modifier: Modifier = Modifier, onValueChange: (String) -> Unit) {
     OutlinedTextField(
         value = value,

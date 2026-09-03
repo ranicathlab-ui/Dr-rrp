@@ -23,6 +23,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.postpci.drrrp.DrRrpApplication
 import com.postpci.drrrp.ui.common.DrRrpScaffold
+import com.postpci.drrrp.ui.common.FormPasswordField
 import com.postpci.drrrp.ui.common.drrrpFieldColors
 import com.postpci.drrrp.ui.theme.AccentYellowGold
 import com.postpci.drrrp.ui.theme.AlertRed
@@ -91,6 +92,8 @@ fun AddCaregiverScreen(
                 colors = drrrpFieldColors(),
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             )
+            FormPasswordField("Create password", viewModel.password, onValueChange = viewModel::onPasswordChange)
+            FormPasswordField("Confirm password", viewModel.confirmPassword, onValueChange = viewModel::onConfirmPasswordChange)
             viewModel.errorMessage?.let {
                 Text(it, color = AlertRed, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 8.dp))
             }

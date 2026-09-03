@@ -90,9 +90,8 @@ class FakeAuthGateway : AuthGateway {
         _currentUser.value = null
     }
 
-    override suspend fun createPatientInvite(name: String, contact: String, email: String?): InviteCredentials {
+    override suspend fun createPatientInvite(name: String, contact: String, email: String?, password: String): InviteCredentials {
         val resolvedEmail = email?.ifBlank { null } ?: syntheticEmail(name)
-        val tempPassword = generateTempPassword()
         val uid = UUID.randomUUID().toString()
         accounts[resolvedEmail] = FakeAccount(
             uid = uid,
@@ -101,12 +100,11 @@ class FakeAuthGateway : AuthGateway {
             displayName = name,
             role = UserRole.PATIENT,
         )
-        return InviteCredentials(uid, resolvedEmail, tempPassword, emailSent = !email.isNullOrBlank())
+        return InviteCredentials(uid, resolvedEmail, password, emailSent = !email.isNullOrBlank())
     }
 
-    override suspend fun createCaregiverInvite(name: String, contact: String, patientId: String, email: String?): InviteCredentials {
+    override suspend fun createCaregiverInvite(name: String, contact: String, patientId: String, email: String?, password: String): InviteCredentials {
         val resolvedEmail = email?.ifBlank { null } ?: syntheticEmail(name)
-        val tempPassword = generateTempPassword()
         val uid = UUID.randomUUID().toString()
         accounts[resolvedEmail] = FakeAccount(
             uid = uid,
@@ -116,7 +114,7 @@ class FakeAuthGateway : AuthGateway {
             role = UserRole.CAREGIVER,
             linkedPatientId = patientId,
         )
-        return InviteCredentials(uid, resolvedEmail, tempPassword, emailSent = !email.isNullOrBlank())
+        return InviteCredentials(uid, resolvedEmail, password, emailSent = !email.isNullOrBlank())
     }
 
     override suspend fun getIdToken(): String? = currentUser.value?.let { "fake-id-token-${it.uid}" }

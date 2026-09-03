@@ -26,13 +26,24 @@ import com.postpci.drrrp.ui.common.FormChipGroup
 import com.postpci.drrrp.ui.common.FormDateField
 import com.postpci.drrrp.ui.common.FormDecimalField
 import com.postpci.drrrp.ui.common.FormNumberField
+import com.postpci.drrrp.ui.common.FormPasswordField
 import com.postpci.drrrp.ui.common.FormSectionLabel
 import com.postpci.drrrp.ui.common.FormTextField
 import com.postpci.drrrp.ui.common.FormToggle
 import com.postpci.drrrp.ui.common.WizardNavButtons
+import com.postpci.drrrp.ui.theme.AlertRed
 
+private const val MIN_PASSWORD_LENGTH = 6
+
+/**
+ * @param isNewPatient Gates the password/confirm-password fields — they only make sense the one
+ * time this step mints the patient's account (see BaselineWizardViewModel.saveCurrentStepAndAdvance).
+ * Re-visiting Demographics later to edit an existing patient's baseline has no account left to set
+ * a password on, so [onNext]'s password is always null there — that argument only carries a
+ * meaningful value when [isNewPatient] is true.
+ */
 @Composable
-fun DemographicsStep(initial: Demographics, showBack: Boolean, onBack: () -> Unit, onNext: (Demographics) -> Unit) {
+fun DemographicsStep(initial: Demographics, showBack: Boolean, isNewPatient: Boolean, onBack: () -> Unit, onNext: (Demographics, String?) -> Unit) {
     var name by remember { mutableStateOf(initial.name) }
     var age by remember { mutableStateOf(initial.age?.toString().orEmpty()) }
     var sex by remember { mutableStateOf(initial.sex) }
@@ -40,6 +51,9 @@ fun DemographicsStep(initial: Demographics, showBack: Boolean, onBack: () -> Uni
     var email by remember { mutableStateOf(initial.email) }
     var comorbidities by remember { mutableStateOf(initial.comorbidities) }
     var currentMeds by remember { mutableStateOf(initial.currentMedications) }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf<String?>(null) }
 
     Column {
         FormTextField("Full name", name) { name = it }
@@ -47,10 +61,25 @@ fun DemographicsStep(initial: Demographics, showBack: Boolean, onBack: () -> Uni
         FormChipGroup("Sex", Sex.entries, sex, { it.name }) { sex = it }
         FormTextField("Contact number", contact) { contact = it }
         FormTextField("Email (optional — leave blank if the patient has no email)", email) { email = it }
+        if (isNewPatient) {
+            FormPasswordField("Create password", password) { password = it }
+            FormPasswordField("Confirm password", confirmPassword) { confirmPassword = it }
+            passwordError?.let {
+                androidx.compose.material3.Text(it, color = AlertRed, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+            }
+        }
         FormTextField("Comorbidities (semicolon-separated)", comorbidities) { comorbidities = it }
         FormTextField("Current medications (pre-PCI, semicolon-separated)", currentMeds) { currentMeds = it }
         WizardNavButtons(showBack, "Next: Procedural", onBack) {
-            onNext(Demographics(name, age.toIntOrNull(), sex, contact, email, comorbidities, currentMeds))
+            if (isNewPatient) {
+                passwordError = when {
+                    password.length < MIN_PASSWORD_LENGTH -> "Password must be at least $MIN_PASSWORD_LENGTH characters."
+                    password != confirmPassword -> "Passwords don't match."
+                    else -> null
+                }
+                if (passwordError != null) return@WizardNavButtons
+            }
+            onNext(Demographics(name, age.toIntOrNull(), sex, contact, email, comorbidities, currentMeds), password.ifBlank { null })
         }
     }
 }

@@ -22,16 +22,19 @@ interface AuthGateway {
 
     suspend fun signOut()
 
-    /** Staff-only: creates a patient record's login and returns the invite to hand over. When
-     *  [email] is a real address (not blank), the patient logs in with it directly and gets a
-     *  Firebase password-reset email sent to it — see [InviteCredentials.emailSent]. Left blank,
-     *  falls back to a synthetic login address and the returned temporary password, for patients
-     *  without email access. */
-    suspend fun createPatientInvite(name: String, contact: String, email: String? = null): InviteCredentials
+    /** Staff-only: creates a patient record's login and returns the invite to hand over.
+     *  [password] is staff-chosen, not generated — staff types it directly so they always know
+     *  exactly what to hand the patient (the account still forces a first-login password change,
+     *  same as before; this is only what unlocks that first sign-in). When [email] is a real
+     *  address (not blank), the patient logs in with it directly and also gets a Firebase
+     *  password-reset email sent to it — see [InviteCredentials.emailSent] — as a second, fully
+     *  self-serve path that doesn't require staff to relay [password] at all. Left blank, [email]
+     *  falls back to a synthetic login address, and [password] is the only way in. */
+    suspend fun createPatientInvite(name: String, contact: String, email: String?, password: String): InviteCredentials
 
-    /** Staff-only: links a caregiver invite to an existing patient. Same [email] behavior as
-     *  [createPatientInvite]. */
-    suspend fun createCaregiverInvite(name: String, contact: String, patientId: String, email: String? = null): InviteCredentials
+    /** Staff-only: links a caregiver invite to an existing patient. Same [email]/[password]
+     *  behavior as [createPatientInvite]. */
+    suspend fun createCaregiverInvite(name: String, contact: String, patientId: String, email: String?, password: String): InviteCredentials
 
     /**
      * The token the REST backend verifies on every call (see the sync layer's `AuthInterceptor`).

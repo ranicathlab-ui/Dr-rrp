@@ -49,6 +49,8 @@ class BaselineWizardViewModel(
         private set
     var isComplete by mutableStateOf(false)
         private set
+    var errorMessage by mutableStateOf<String?>(null)
+        private set
 
     init {
         initialPatientId?.let { id ->
@@ -72,32 +74,47 @@ class BaselineWizardViewModel(
         if (currentStep > 0) currentStep -= 1
     }
 
-    fun saveCurrentStepAndAdvance() {
+    // password is only ever non-null on the one call that creates the invite (step 0, new
+    // patient) — see DemographicsStep's doc. Every other step's call passes null and it's unused.
+    fun saveCurrentStepAndAdvance(password: String? = null) {
         viewModelScope.launch {
             isSaving = true
-            val id = patientId ?: run {
-                val creds = authGateway.createPatientInvite(draft.demographics.name, draft.demographics.contactNumber, draft.demographics.email)
-                inviteCredentials = creds
-                patientId = creds.patientId
-                creds.patientId
+            errorMessage = null
+            try {
+                val id = patientId ?: run {
+                    val creds = authGateway.createPatientInvite(
+                        draft.demographics.name, draft.demographics.contactNumber, draft.demographics.email, password.orEmpty(),
+                    )
+                    inviteCredentials = creds
+                    patientId = creds.patientId
+                    creds.patientId
+                }
+                val now = System.currentTimeMillis()
+                val finishing = currentStep == 4
+                val updated = draft.copy(
+                    patientId = id,
+                    lastCompletedWizardStep = maxOf(draft.lastCompletedWizardStep, currentStep),
+                    isFinalized = draft.isFinalized || finishing,
+                    createdAt = if (draft.createdAt == 0L) now else draft.createdAt,
+                    updatedAt = now,
+                    // Every save is a local edit, so it always needs (re-)pushing even if a
+                    // previous version of this baseline had already synced.
+                    syncStatus = SyncStatus.PENDING,
+                )
+                database.patientBaselineDao().upsert(updated)
+                draft = updated
+                onSaved()
+                if (finishing) isComplete = true else currentStep += 1
+            } catch (e: Exception) {
+                // Reproduced live: a slow/cold backend timing out on createPatientInvite used to
+                // crash the whole app here, uncaught, wiping out everything staff had just typed
+                // across all five steps — this coroutine had no try/catch at all. Now it just
+                // shows an error and leaves `draft` and every field exactly as staff left them, so
+                // retrying (e.g. once the backend's woken back up) is a single tap, not a redo.
+                errorMessage = e.message ?: "Could not save — check your connection and try again."
+            } finally {
+                isSaving = false
             }
-            val now = System.currentTimeMillis()
-            val finishing = currentStep == 4
-            val updated = draft.copy(
-                patientId = id,
-                lastCompletedWizardStep = maxOf(draft.lastCompletedWizardStep, currentStep),
-                isFinalized = draft.isFinalized || finishing,
-                createdAt = if (draft.createdAt == 0L) now else draft.createdAt,
-                updatedAt = now,
-                // Every save is a local edit, so it always needs (re-)pushing even if a
-                // previous version of this baseline had already synced.
-                syncStatus = SyncStatus.PENDING,
-            )
-            database.patientBaselineDao().upsert(updated)
-            draft = updated
-            isSaving = false
-            onSaved()
-            if (finishing) isComplete = true else currentStep += 1
         }
     }
 

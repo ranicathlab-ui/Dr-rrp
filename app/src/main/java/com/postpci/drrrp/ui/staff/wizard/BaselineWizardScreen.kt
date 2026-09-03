@@ -29,6 +29,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.postpci.drrrp.DrRrpApplication
 import com.postpci.drrrp.ui.common.DrRrpScaffold
 import com.postpci.drrrp.ui.theme.AccentYellowGold
+import com.postpci.drrrp.ui.theme.AlertRed
 import com.postpci.drrrp.ui.theme.BorderHairline
 import com.postpci.drrrp.ui.theme.SurfaceCard
 import com.postpci.drrrp.ui.theme.TextPrimary
@@ -92,10 +93,17 @@ fun BaselineWizardScreen(
                 if (credentials != null && viewModel.currentStep == 1) {
                     InviteCredentialsCard(email = credentials.email, tempPassword = credentials.temporaryPassword, emailSent = credentials.emailSent)
                 }
+                viewModel.errorMessage?.let {
+                    Text(it, color = AlertRed, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 12.dp))
+                }
                 when (viewModel.currentStep) {
-                    0 -> DemographicsStep(viewModel.draft.demographics, false, {}) {
-                        viewModel.updateDemographics(it)
-                        viewModel.saveCurrentStepAndAdvance()
+                    // isNewPatient reads the screen's own `patientId` param (null = new patient),
+                    // not viewModel.patientId — that field flips non-null the instant the invite's
+                    // created mid-flow, but this needs to stay true for the rest of that same
+                    // "new patient" session so the password fields don't disappear right after use.
+                    0 -> DemographicsStep(viewModel.draft.demographics, false, isNewPatient = patientId == null, onBack = {}) { demographics, password ->
+                        viewModel.updateDemographics(demographics)
+                        viewModel.saveCurrentStepAndAdvance(password)
                     }
                     1 -> ProceduralStep(viewModel.draft.procedural, viewModel::goBack) {
                         viewModel.updateProcedural(it)
