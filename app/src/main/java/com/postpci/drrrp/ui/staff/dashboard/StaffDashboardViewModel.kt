@@ -4,16 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.postpci.drrrp.data.local.DrRrpDatabase
 import com.postpci.drrrp.data.local.entity.AlertEntity
-import com.postpci.drrrp.data.local.entity.Demographics
-import com.postpci.drrrp.data.local.entity.LabsAndVitals
-import com.postpci.drrrp.data.local.entity.MedicationsAndFollowUp
 import com.postpci.drrrp.data.local.entity.PatientBaselineEntity
-import com.postpci.drrrp.data.local.entity.ProceduralDetails
-import com.postpci.drrrp.data.local.entity.Social
-import com.postpci.drrrp.data.model.AccessSite
 import com.postpci.drrrp.data.model.AlertSeverity
-import com.postpci.drrrp.data.model.PreferredLanguage
-import com.postpci.drrrp.data.model.Sex
 import com.postpci.drrrp.data.model.SyncStatus
 import com.postpci.drrrp.data.schedule.MonitoringSchedule
 import com.postpci.drrrp.data.sync.SyncApiService
@@ -23,7 +15,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -59,7 +50,7 @@ data class StaffDashboardUiState(
     val patients: List<PatientSummary> = emptyList(),
     val searchQuery: String = "",
     val statusFilter: AlertStatusFilter = AlertStatusFilter.ALL,
-    /** True when [remotePatients] failed and the list below is the local-only fallback — staff
+    /** True when fetching remote patients failed and the list below is the local-only fallback — staff
      *  should know they might not be seeing every patient (only ones this device has synced). */
     val isOffline: Boolean = false,
     val totalUnreadCount: Int = 0,
@@ -94,7 +85,7 @@ class StaffDashboardViewModel(
             isLoading.value = true
             remotePatients.value = try {
                 syncApiService.getStaffPatients()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
             isLoading.value = false

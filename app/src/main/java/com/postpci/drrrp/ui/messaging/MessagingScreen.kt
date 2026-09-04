@@ -85,12 +85,18 @@ fun MessagingScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(patientId) {
+        val notificationManager = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        notificationManager.cancel(com.postpci.drrrp.data.sync.NotificationHelper.NOTIFICATION_ID_MESSAGES)
+        notificationManager.cancel(patientId.hashCode())
         com.postpci.drrrp.data.sync.NotificationHelper.cancelMessageNotifications(context, patientId)
     }
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
+            val notificationManager = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            notificationManager.cancel(com.postpci.drrrp.data.sync.NotificationHelper.NOTIFICATION_ID_MESSAGES)
+            notificationManager.cancel(patientId.hashCode())
             com.postpci.drrrp.data.sync.NotificationHelper.cancelMessageNotifications(context, patientId)
         }
     }

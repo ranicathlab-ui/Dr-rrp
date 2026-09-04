@@ -382,7 +382,7 @@ exports.onMessageWritten = onDocumentWritten("patients/{patientId}/messages/{mes
   const { patientId } = event.params;
   const recipientUids = message.senderRole === "STAFF" ? await push.patientAndCaregiverUids(patientId) : await push.staffUids();
   const tokens = await push.tokensForUids(recipientUids);
-  await push.sendToTokens(tokens, { title: `Message from ${message.senderName}`, body: message.text, severity: "INFO" });
+  await push.sendToTokens(tokens, { title: `Message from ${message.senderName}`, body: message.text, severity: "INFO", senderId: message.senderId, patientId: patientId });
 });
 
 /** Daily sweep for "due today but nothing logged since yesterday" — see AlertSourceType.MISSED_ENTRY

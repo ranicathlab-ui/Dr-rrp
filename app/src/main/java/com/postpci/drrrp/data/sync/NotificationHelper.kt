@@ -12,13 +12,11 @@ object NotificationHelper {
      */
     fun cancelMessageNotifications(context: Context, patientId: String? = null) {
         try {
-            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-            manager?.cancel(NOTIFICATION_ID_MESSAGES)
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(NOTIFICATION_ID_MESSAGES)
             patientId?.let {
-                manager?.cancel(it.hashCode())
+                notificationManager.cancel(it.hashCode())
             }
-            // Clear all active system tray notifications for this conversation
-            manager?.cancelAll()
         } catch (_: Exception) {
             // Best-effort fallback
         }

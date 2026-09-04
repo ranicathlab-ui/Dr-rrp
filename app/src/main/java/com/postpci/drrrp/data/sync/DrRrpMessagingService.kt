@@ -33,10 +33,25 @@ class DrRrpMessagingService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
+        // Suppress notification if sender is the currently logged-in user (self-notification echo filter)
+        val app = applicationContext as? DrRrpApplication
+        val currentUserId = app?.authGateway?.currentUser?.value?.uid
+        val senderId = message.data["senderId"]
+        if (!senderId.isNullOrBlank() && senderId == currentUserId) {
+            return
+        }
+
         val title = message.notification?.title ?: message.data["title"] ?: getString(R.string.app_name)
         val body = message.notification?.body ?: message.data["body"] ?: return
         val isEmergency = message.data["severity"] == "EMERGENCY"
         val channelId = if (isEmergency) CHANNEL_EMERGENCY else CHANNEL_ROUTINE
+
+        val patientId = message.data["patientId"]
+        val notificationId = if (!patientId.isNullOrBlank()) {
+            NotificationHelper.NOTIFICATION_ID_MESSAGES
+        } else {
+            message.messageId?.hashCode() ?: System.currentTimeMillis().toInt()
+        }
 
         val openIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -61,7 +76,7 @@ class DrRrpMessagingService : FirebaseMessagingService() {
         // Notification permission (Android 13+) is requested from MainActivity; if it was denied,
         // notify() below is a documented no-op rather than a crash — nothing else to guard here.
         ContextCompat.getSystemService(this, NotificationManager::class.java)
-            ?.notify(message.messageId?.hashCode() ?: System.currentTimeMillis().toInt(), notification)
+            ?.notify(notificationId, notification)
     }
 
     companion object {
