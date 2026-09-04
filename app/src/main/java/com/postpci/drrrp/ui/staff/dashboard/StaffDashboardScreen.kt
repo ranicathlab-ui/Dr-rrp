@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -289,17 +290,39 @@ private fun PatientCard(
                 }
 
                 if (patient.hasUnreadMessages || patient.hasMessages) {
+                    val unread = patient.hasUnreadMessages
+                    val badgeBg = if (unread) StatusGoodGreen.copy(alpha = 0.15f) else Color(0xFF64748B).copy(alpha = 0.12f)
+                    val badgeFg = if (unread) StatusGoodGreen else Color(0xFF64748B)
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
+                        color = badgeBg,
                     ) {
-                        Text(
-                            text = if (patient.hasUnreadMessages) "✉ New Message" else "✉ Messages",
-                            color = MaterialTheme.colorScheme.secondary,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        ) {
+                            Text(
+                                text = if (unread) "✉ New Message" else "✉ Messages",
+                                color = badgeFg,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            if (unread && patient.unreadCount > 0) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Surface(
+                                    shape = CircleShape,
+                                    color = AlertRoseRed,
+                                ) {
+                                    Text(
+                                        text = if (patient.unreadCount > 99) "99+" else patient.unreadCount.toString(),
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

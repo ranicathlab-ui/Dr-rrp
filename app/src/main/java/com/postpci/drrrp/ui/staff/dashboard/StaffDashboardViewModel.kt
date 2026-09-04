@@ -35,6 +35,7 @@ data class PatientSummary(
     val hasMissedEntry: Boolean,
     val hasMessages: Boolean = false,
     val hasUnreadMessages: Boolean = false,
+    val unreadCount: Int = 0,
 )
 
 enum class AlertStatusFilter { ALL, EMERGENCY, ROUTINE, MESSAGES, NONE }

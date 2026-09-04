@@ -31,6 +31,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -43,6 +45,7 @@ import com.postpci.drrrp.ui.common.DrRrpScaffold
 import com.postpci.drrrp.ui.common.drrrpFieldColors
 import com.postpci.drrrp.ui.theme.AccentYellowGold
 import com.postpci.drrrp.ui.theme.HeaderBrightBlue
+import com.postpci.drrrp.ui.theme.StatusGoodGreen
 import com.postpci.drrrp.ui.theme.SurfaceCard
 import com.postpci.drrrp.ui.theme.TextPrimary
 import com.postpci.drrrp.ui.theme.TextSecondary
@@ -144,10 +147,13 @@ private fun MessageBubble(message: MessageEntity, isMine: Boolean) {
                 Text(message.senderName, color = AccentYellowGold, style = MaterialTheme.typography.labelMedium)
             }
             Text(message.text, color = TextPrimary, style = MaterialTheme.typography.bodyMedium)
+            val isUnread = (!isMine) && (!message.readByPatient || !message.readByStaff)
+            val timestampColor = if (isUnread) StatusGoodGreen else Color(0xFF64748B)
             Text(
                 Instant.ofEpochMilli(message.timestamp).atZone(ZoneId.systemDefault()).format(timeFormatter),
-                color = TextSecondary,
+                color = timestampColor,
                 style = MaterialTheme.typography.labelSmall,
+                fontWeight = if (isUnread) FontWeight.Bold else FontWeight.Normal,
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
