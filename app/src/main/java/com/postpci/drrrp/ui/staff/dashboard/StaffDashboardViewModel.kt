@@ -205,7 +205,11 @@ class StaffDashboardViewModel(
             }
         }
 
-        val filtered = summaries
+        val deduplicated = summaries
+            .distinctBy { it.patientId }
+            .distinctBy { it.name.trim().lowercase() }
+
+        val filtered = deduplicated
             .filter { it.name.contains(query, ignoreCase = true) }
             .filter { s ->
                 when (filter) {
