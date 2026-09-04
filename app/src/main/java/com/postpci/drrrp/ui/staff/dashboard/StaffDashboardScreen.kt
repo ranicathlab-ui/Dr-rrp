@@ -82,7 +82,6 @@ fun StaffDashboardScreen(
         factory = viewModelFactory { initializer { StaffDashboardViewModel(application.database, application.syncApiService, application.syncManager) } },
     )
     val state by viewModel.uiState.collectAsState()
-    val scope = rememberCoroutineScopeCompat()
     val context = LocalContext.current
     var patientToDelete by remember { mutableStateOf<PatientSummary?>(null) }
 
@@ -112,7 +111,7 @@ fun StaffDashboardScreen(
                     }
                 }
             }
-            TextButton(onClick = { scope.launch { application.authGateway.signOut() } }) {
+            TextButton(onClick = onSignOut) {
                 Text("Sign out", color = Color.White)
             }
         },
@@ -160,6 +159,19 @@ fun StaffDashboardScreen(
                 LazyColumn {
                     items(state.patients, key = { it.patientId }) { patient ->
                         val isMessagesFilter = state.statusFilter == AlertStatusFilter.MESSAGES
+
+                        val now = System.currentTimeMillis()
+                        val isFollowUpDue = patient.nextFollowUpDate != null && patient.nextFollowUpDate <= now && patient.followUpStatus == null
+
+                        if (isFollowUpDue) {
+                            FollowUpActionCard(
+                                patientName = patient.name,
+                                onAction = { attended, nextFollowUp, nextEcho, reason ->
+                                    viewModel.updateFollowUpAttendance(patient.patientId, attended, nextFollowUp, nextEcho, reason)
+                                }
+                            )
+                        }
+
                         PatientCard(
                             patient = patient,
                             onClick = {
@@ -210,9 +222,6 @@ fun StaffDashboardScreen(
         )
     }
 }
-
-@Composable
-private fun rememberCoroutineScopeCompat() = androidx.compose.runtime.rememberCoroutineScope()
 
 @Composable
 private fun PatientCard(
@@ -387,5 +396,80 @@ private fun PatientCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun FollowUpActionCard(
+    patientName: String,
+    onAction: (attended: Boolean, nextFollowUp: Long?, nextEcho: Long?, reason: String?) -> Unit
+) {
+    var showDialog by remember { mutableStateOf(false) }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Follow-up Due", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+            Text("Did $patientName attend the visit today?", color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 4.dp, bottom = 12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = { showDialog = true },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                ) { Text("No") }
+                Button(
+                    onClick = { onAction(true, System.currentTimeMillis() + 86400000L * 30, null, null) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) { Text("Yes", color = Color.White) }
+            }
+        }
+    }
+
+    if (showDialog) {
+        var selectedReason by remember { mutableStateOf("") }
+        val reasons = listOf("Rescheduled for later", "Patient unreachable / phone switched off", "Patient unwell / hospitalized elsewhere", "Other")
+
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Missed Follow-up Reason") },
+            text = {
+                Column {
+                    reasons.forEach { reason ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedReason = reason }
+                                .padding(vertical = 8.dp)
+                        ) {
+                            androidx.compose.material3.RadioButton(
+                                selected = selectedReason == reason,
+                                onClick = { selectedReason = reason }
+                            )
+                            Text(reason, modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onAction(false, null, null, selectedReason)
+                        showDialog = false
+                    },
+                    enabled = selectedReason.isNotEmpty()
+                ) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 }

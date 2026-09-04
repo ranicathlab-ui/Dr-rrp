@@ -23,10 +23,14 @@ class SyncWorker(context: Context, params: WorkerParameters, private val syncMan
  * doc), so [SyncWorker] can't use WorkManager's default no-arg-constructor instantiation; it needs
  * [SyncManager] injected.
  */
-class DrRrpWorkerFactory(private val syncManager: SyncManager) : WorkerFactory() {
+class DrRrpWorkerFactory(
+    private val syncManager: SyncManager,
+    private val database: com.postpci.drrrp.data.local.DrRrpDatabase,
+) : WorkerFactory() {
     override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters) =
         when (workerClassName) {
             SyncWorker::class.java.name -> SyncWorker(appContext, workerParameters, syncManager)
+            StaffReminderWorker::class.java.name -> StaffReminderWorker(appContext, workerParameters, database)
             else -> null
         }
 }

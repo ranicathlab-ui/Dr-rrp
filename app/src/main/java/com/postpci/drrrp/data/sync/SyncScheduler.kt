@@ -41,4 +41,12 @@ object SyncScheduler {
         WorkManager.getInstance(context)
             .enqueueUniqueWork(ONE_TIME_WORK_NAME, ExistingWorkPolicy.REPLACE, request)
     }
+
+    /** Schedules the automated staff reminder for follow-ups and echos to run daily. */
+    fun scheduleStaffReminders(context: Context) {
+        val request = PeriodicWorkRequestBuilder<StaffReminderWorker>(24, TimeUnit.HOURS)
+            .build()
+        WorkManager.getInstance(context)
+            .enqueueUniquePeriodicWork("drrrp-staff-reminders", ExistingPeriodicWorkPolicy.KEEP, request)
+    }
 }

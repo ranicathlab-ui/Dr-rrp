@@ -55,7 +55,7 @@ class DrRrpApplication : Application(), Configuration.Provider {
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
-            .setWorkerFactory(DrRrpWorkerFactory(syncManager))
+            .setWorkerFactory(DrRrpWorkerFactory(syncManager, database))
             .build()
 
     override fun onCreate() {
@@ -65,6 +65,7 @@ class DrRrpApplication : Application(), Configuration.Provider {
         // constrained to NetworkType.CONNECTED, so they're harmless (and inert) when offline or
         // when there's nothing queued yet.
         SyncScheduler.scheduleRecurring(this)
+        SyncScheduler.scheduleStaffReminders(this)
         SyncScheduler.requestImmediateSync(this)
         observeAuthForPushRegistration()
     }
