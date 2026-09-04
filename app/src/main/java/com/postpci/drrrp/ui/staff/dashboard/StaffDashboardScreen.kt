@@ -22,7 +22,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
@@ -83,8 +86,24 @@ fun StaffDashboardScreen(
     DrRrpScaffold(
         title = "Clinic Dashboard",
         actions = {
+            BadgedBox(
+                badge = {
+                    if (state.totalUnreadCount > 0) {
+                        Badge(
+                            containerColor = AlertRoseRed,
+                            contentColor = Color.White,
+                        ) {
+                            Text(if (state.totalUnreadCount > 99) "99+" else state.totalUnreadCount.toString())
+                        }
+                    }
+                },
+            ) {
+                IconButton(onClick = { viewModel.onFilterChange(AlertStatusFilter.MESSAGES) }) {
+                    Icon(Icons.Filled.Email, contentDescription = "Messages", tint = MaterialTheme.colorScheme.onSurface)
+                }
+            }
             TextButton(onClick = { scope.launch { application.authGateway.signOut() } }) {
-                Text("Sign out", color = MaterialTheme.colorScheme.onPrimary)
+                Text("Sign out", color = MaterialTheme.colorScheme.onSurface)
             }
         },
     ) { modifier ->

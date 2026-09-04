@@ -48,6 +48,7 @@ data class StaffDashboardUiState(
     /** True when [remotePatients] failed and the list below is the local-only fallback — staff
      *  should know they might not be seeing every patient (only ones this device has synced). */
     val isOffline: Boolean = false,
+    val totalUnreadCount: Int = 0,
 )
 
 /**
@@ -104,6 +105,7 @@ class StaffDashboardViewModel(
         database.alertDao().observeMostRecentPerPatient(),
         database.messageDao().observePatientIdsWithMessages(),
         database.messageDao().observePatientIdsWithUnreadForStaff(),
+        database.messageDao().observeTotalUnreadCountForStaff(),
         searchQuery,
         statusFilter,
     ) { flows: Array<Any?> ->
@@ -117,8 +119,9 @@ class StaffDashboardViewModel(
         val messagePatientIds = flows[3] as List<String>
         @Suppress("UNCHECKED_CAST")
         val unreadPatientIds = flows[4] as List<String>
-        val query = flows[5] as String
-        val filter = flows[6] as AlertStatusFilter
+        val totalUnread = (flows[5] as? Int) ?: 0
+        val query = flows[6] as String
+        val filter = flows[7] as AlertStatusFilter
 
         val today = LocalDate.now()
         val messageIdsSet = messagePatientIds.toSet()
@@ -176,7 +179,14 @@ class StaffDashboardViewModel(
             // Sorted by most recent flag, per spec; patients with no alert at all sort last.
             .sortedByDescending { it.lastAlertAt ?: -1L }
 
-        StaffDashboardUiState(isLoading = false, patients = filtered, searchQuery = query, statusFilter = filter, isOffline = remote == null)
+        StaffDashboardUiState(
+            isLoading = false,
+            patients = filtered,
+            searchQuery = query,
+            statusFilter = filter,
+            isOffline = remote == null,
+            totalUnreadCount = totalUnread,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StaffDashboardUiState())
 
     fun onSearchChange(value: String) {
