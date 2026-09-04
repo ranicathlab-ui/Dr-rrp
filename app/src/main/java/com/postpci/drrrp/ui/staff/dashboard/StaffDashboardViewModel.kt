@@ -86,68 +86,7 @@ class StaffDashboardViewModel(
     private val isLoading = MutableStateFlow(true)
 
     init {
-        seedDemoPatientsIfNeeded()
         refresh()
-    }
-
-    private fun seedDemoPatientsIfNeeded() {
-        viewModelScope.launch {
-            try {
-                if (database.patientBaselineDao().observeAll().first().isNotEmpty()) return@launch
-                val now = System.currentTimeMillis()
-                val list = listOf(
-                    PatientBaselineEntity(
-                        patientId = "demo_patient_0309",
-                        demographics = Demographics(name = "test patient 03.09", age = 77, sex = Sex.MALE, contactNumber = "9894184664"),
-                        procedural = ProceduralDetails(pciDate = LocalDate.now().minusDays(1), accessSite = AccessSite.RADIAL),
-                        labsAndVitals = LabsAndVitals(lvefPercent = 55),
-                        medicationsAndFollowUp = MedicationsAndFollowUp(daptAgent = "Aspirin + Clopidogrel"),
-                        social = Social(preferredLanguage = PreferredLanguage.ENGLISH),
-                        lastCompletedWizardStep = 4,
-                        isFinalized = true,
-                        createdAt = now,
-                        updatedAt = now,
-                    ),
-                    PatientBaselineEntity(
-                        patientId = "demo_patient_ganga",
-                        demographics = Demographics(name = "ganga", age = 56, sex = Sex.FEMALE, contactNumber = "9894184665"),
-                        procedural = ProceduralDetails(pciDate = LocalDate.now().minusDays(2), accessSite = AccessSite.RADIAL),
-                        labsAndVitals = LabsAndVitals(lvefPercent = 50),
-                        medicationsAndFollowUp = MedicationsAndFollowUp(daptAgent = "Aspirin + Ticagrelor"),
-                        social = Social(preferredLanguage = PreferredLanguage.ENGLISH),
-                        lastCompletedWizardStep = 4,
-                        isFinalized = true,
-                        createdAt = now,
-                        updatedAt = now,
-                    ),
-                    PatientBaselineEntity(
-                        patientId = "demo_patient_1",
-                        demographics = Demographics(name = "Patient One", age = 62, sex = Sex.MALE, contactNumber = "9894184666"),
-                        procedural = ProceduralDetails(pciDate = LocalDate.now().minusDays(2), accessSite = AccessSite.FEMORAL),
-                        labsAndVitals = LabsAndVitals(lvefPercent = 45),
-                        medicationsAndFollowUp = MedicationsAndFollowUp(daptAgent = "Aspirin + Prasugrel"),
-                        social = Social(preferredLanguage = PreferredLanguage.ENGLISH),
-                        lastCompletedWizardStep = 4,
-                        isFinalized = true,
-                        createdAt = now,
-                        updatedAt = now,
-                    ),
-                    PatientBaselineEntity(
-                        patientId = "demo_patient_kamalam",
-                        demographics = Demographics(name = "kamalam", age = 56, sex = Sex.FEMALE, contactNumber = "9894184667"),
-                        procedural = ProceduralDetails(pciDate = LocalDate.now().minusDays(3), accessSite = AccessSite.RADIAL),
-                        labsAndVitals = LabsAndVitals(lvefPercent = 60),
-                        medicationsAndFollowUp = MedicationsAndFollowUp(daptAgent = "Aspirin + Clopidogrel"),
-                        social = Social(preferredLanguage = PreferredLanguage.ENGLISH),
-                        lastCompletedWizardStep = 4,
-                        isFinalized = true,
-                        createdAt = now,
-                        updatedAt = now,
-                    ),
-                )
-                list.forEach { database.patientBaselineDao().upsert(it) }
-            } catch (_: Exception) {}
-        }
     }
 
     fun refresh() {
