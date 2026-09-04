@@ -17,13 +17,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -157,9 +160,17 @@ fun TodayScreen(
                 exit = fadeOut() + shrinkVertically(),
             ) {
                 if (routineAlerts.isNotEmpty()) {
-                    AlertBanner(count = routineAlerts.size, latestMessage = routineAlerts.first().message) {
-                        context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${ClinicContact.PHONE_NUMBER}")))
-                    }
+                    val firstAlert = routineAlerts.first()
+                    AlertBanner(
+                        count = routineAlerts.size,
+                        latestMessage = firstAlert.message,
+                        onCallClinic = {
+                            context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${ClinicContact.PHONE_NUMBER}")))
+                        },
+                        onDismiss = {
+                            viewModel.dismissAlertBanner(firstAlert.id)
+                        },
+                    )
                 }
             }
 
@@ -392,17 +403,46 @@ private fun GreetingHeader(state: TodayUiState) {
 }
 
 @Composable
-private fun AlertBanner(count: Int, latestMessage: String, onCallClinic: () -> Unit) {
+private fun AlertBanner(
+    count: Int,
+    latestMessage: String,
+    onCallClinic: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val dark = isSystemInDarkTheme()
+    val descriptionColor = if (dark) MaterialTheme.colorScheme.onSurface else Color(0xFF7F1D1D)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 16.dp)
-            .background(AlertRed.copy(alpha = 0.16f), RoundedCornerShape(16.dp))
-            .border(1.dp, AlertRed, RoundedCornerShape(16.dp))
+            .background(AlertRed.copy(alpha = 0.14f), RoundedCornerShape(16.dp))
+            .border(1.dp, AlertRed.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
             .padding(16.dp),
     ) {
-        Text("$count reading(s) need attention", color = AlertRed, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-        Text(latestMessage, color = TextPrimary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp, bottom = 12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "$count reading(s) need attention",
+                color = AlertRed,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
+                Icon(Icons.Filled.Close, contentDescription = "Dismiss", tint = AlertRed)
+            }
+        }
+        Text(
+            latestMessage,
+            color = descriptionColor,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(top = 6.dp, bottom = 12.dp),
+        )
         Button(
             onClick = onCallClinic,
             colors = ButtonDefaults.buttonColors(containerColor = AlertRed, contentColor = Color.White),

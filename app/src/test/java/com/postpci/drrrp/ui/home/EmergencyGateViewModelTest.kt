@@ -69,6 +69,12 @@ private class FakeAlertDao : AlertDao {
         }
     }
 
+    override suspend fun markReviewedForField(patientId: String, fieldKey: String, reviewedAt: Long) {
+        state.value = state.value.map {
+            if (it.patientId == patientId && it.fieldKey == fieldKey) it.copy(reviewed = true, reviewedAt = reviewedAt) else it
+        }
+    }
+
     override suspend fun getPendingSync(): List<AlertEntity> = state.value.filter { it.syncStatus != SyncStatus.SYNCED }
 
     override suspend fun countUnreviewedForSourceAndField(sourceId: String, fieldKey: String): Int =

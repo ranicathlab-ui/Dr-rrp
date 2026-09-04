@@ -82,9 +82,17 @@ fun MessagingScreen(
     val messages by viewModel.messages.collectAsState()
     var draft by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    LaunchedEffect(patientId) {
+        com.postpci.drrrp.data.sync.NotificationHelper.cancelMessageNotifications(context, patientId)
+    }
 
     LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+            com.postpci.drrrp.data.sync.NotificationHelper.cancelMessageNotifications(context, patientId)
+        }
     }
 
     DrRrpScaffold(title = "Messages", showBackButton = true, onBack = onBack) { modifier ->

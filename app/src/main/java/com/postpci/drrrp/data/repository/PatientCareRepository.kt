@@ -13,6 +13,7 @@ import com.postpci.drrrp.data.model.BleedingSeverity
 import com.postpci.drrrp.data.model.ChestPainType
 import com.postpci.drrrp.data.model.NyhaClass
 import com.postpci.drrrp.data.model.SyncStatus
+import com.postpci.drrrp.data.schedule.MonitoringSchedule
 import java.time.LocalDate
 import java.util.UUID
 
@@ -56,21 +57,24 @@ class PatientCareRepository(
         return updated
     }
 
-    private suspend fun raiseAlert(patientId: String, sourceId: String, draft: AlertDraft?) {
-        if (draft == null) return
-        val alreadyRaised = alertDao.countUnreviewedForSourceAndField(sourceId, draft.fieldKey) > 0
+    private suspend fun raiseAlert(patientId: String, sourceId: String, draft: AlertDraft?, fieldKey: String? = null) {
+        if (draft == null) {
+            // New Safe Reading Auto-Clear: clear old unreviewed warnings for this field
+            fieldKey?.let { key ->
+                alertDao.markReviewedForField(patientId, key, System.currentTimeMillis())
+            }
+            return
+        }
+        val targetFieldKey = draft.fieldKey
+        val alreadyRaised = alertDao.countUnreviewedForSourceAndField(sourceId, targetFieldKey) > 0
         if (alreadyRaised) return
         alertDao.upsert(
             AlertEntity(
-                // Deterministic, not random: the server's alert-creation trigger (functions/index.js)
-                // writes to the exact same id for the exact same source+field, so when this record
-                // eventually syncs down from the server it upserts onto this same local row instead
-                // of appearing as a duplicate. See PatientDetailResponse.alerts / SyncManager.pullPatient.
-                id = "${sourceId}_${draft.fieldKey}",
+                id = "${sourceId}_${targetFieldKey}",
                 patientId = patientId,
                 sourceType = AlertSourceType.DAILY_ENTRY,
                 sourceId = sourceId,
-                fieldKey = draft.fieldKey,
+                fieldKey = targetFieldKey,
                 severity = draft.severity,
                 message = draft.message,
                 normalRangeText = draft.normalRangeText,
@@ -92,17 +96,17 @@ class PatientCareRepository(
 
     suspend fun saveRestingHeartRate(patientId: String, bpm: Int, loggedByCaregiver: Boolean = false) {
         val entry = updateTodayEntry(patientId, loggedByCaregiver) { it.copy(restingHeartRate = bpm) }
-        raiseAlert(patientId, entry.id, AlertRules.checkRestingHeartRate(bpm))
+        raiseAlert(patientId, entry.id, AlertRules.checkRestingHeartRate(bpm), MonitoringSchedule.RESTING_HEART_RATE)
     }
 
     suspend fun saveBloodPressure(patientId: String, systolic: Int, diastolic: Int, loggedByCaregiver: Boolean = false) {
         val entry = updateTodayEntry(patientId, loggedByCaregiver) { it.copy(bpSystolic = systolic, bpDiastolic = diastolic) }
-        raiseAlert(patientId, entry.id, AlertRules.checkBloodPressure(systolic, diastolic))
+        raiseAlert(patientId, entry.id, AlertRules.checkBloodPressure(systolic, diastolic), MonitoringSchedule.BLOOD_PRESSURE)
     }
 
     suspend fun saveSpo2(patientId: String, percent: Int, loggedByCaregiver: Boolean = false) {
         val entry = updateTodayEntry(patientId, loggedByCaregiver) { it.copy(spo2 = percent) }
-        raiseAlert(patientId, entry.id, AlertRules.checkSpo2(percent))
+        raiseAlert(patientId, entry.id, AlertRules.checkSpo2(percent), MonitoringSchedule.SPO2)
     }
 
     suspend fun saveWeight(patientId: String, kg: Double, loggedByCaregiver: Boolean = false) {
@@ -110,7 +114,7 @@ class PatientCareRepository(
         val windowStart = LocalDate.now().minusDays(3)
         val recent = dailyEntryDao.getPage(patientId, limit = 10, offset = 0)
             .filter { !it.entryDate.isBefore(windowStart) && it.entryDate.isBefore(LocalDate.now()) }
-        raiseAlert(patientId, entry.id, AlertRules.checkWeightGain(kg, recent))
+        raiseAlert(patientId, entry.id, AlertRules.checkWeightGain(kg, recent), MonitoringSchedule.WEIGHT)
     }
 
     suspend fun saveAccessSiteCheck(
@@ -124,14 +128,14 @@ class PatientCareRepository(
         val entry = updateTodayEntry(patientId, loggedByCaregiver) {
             it.copy(accessSiteBleeding = bleeding, accessSiteSwelling = swelling, accessSitePain = pain, accessSiteDiscolouration = discolouration)
         }
-        raiseAlert(patientId, entry.id, AlertRules.checkAccessSite(bleeding, swelling, pain, discolouration))
+        raiseAlert(patientId, entry.id, AlertRules.checkAccessSite(bleeding, swelling, pain, discolouration), MonitoringSchedule.ACCESS_SITE_CHECK)
     }
 
     suspend fun saveMedications(patientId: String, medsTakenKeys: List<String>, daptTaken: Boolean, loggedByCaregiver: Boolean = false) {
         val entry = updateTodayEntry(patientId, loggedByCaregiver) {
             it.copy(medicationsTaken = medsTakenKeys.joinToString(","), daptTaken = daptTaken)
         }
-        raiseAlert(patientId, entry.id, AlertRules.checkDaptTaken(daptTaken))
+        raiseAlert(patientId, entry.id, AlertRules.checkDaptTaken(daptTaken), MonitoringSchedule.MEDICATIONS_TAKEN)
     }
 
     suspend fun saveActivity(patientId: String, stepsOrMinutes: Int, symptomThatStoppedActivity: String?, loggedByCaregiver: Boolean = false) {
@@ -142,19 +146,19 @@ class PatientCareRepository(
 
     suspend fun saveChestPain(patientId: String, count: Int, type: ChestPainType?, loggedByCaregiver: Boolean = false) {
         val entry = updateTodayEntry(patientId, loggedByCaregiver) { it.copy(chestPainCount = count, chestPainType = type) }
-        raiseAlert(patientId, entry.id, AlertRules.checkChestPain(count, type))
+        raiseAlert(patientId, entry.id, AlertRules.checkChestPain(count, type), MonitoringSchedule.CHEST_PAIN)
     }
 
     suspend fun saveSymptomFlags(patientId: String, palpitations: Boolean, syncope: Boolean, nearSyncope: Boolean, loggedByCaregiver: Boolean = false) {
         val entry = updateTodayEntry(patientId, loggedByCaregiver) {
             it.copy(palpitations = palpitations, syncope = syncope, nearSyncope = nearSyncope)
         }
-        raiseAlert(patientId, entry.id, AlertRules.checkSymptomFlags(palpitations, syncope, nearSyncope))
+        raiseAlert(patientId, entry.id, AlertRules.checkSymptomFlags(palpitations, syncope, nearSyncope), MonitoringSchedule.PALPITATIONS_SYNCOPE)
     }
 
     suspend fun saveBreathlessness(patientId: String, nyha: NyhaClass, loggedByCaregiver: Boolean = false) {
         val entry = updateTodayEntry(patientId, loggedByCaregiver) { it.copy(nyhaClass = nyha) }
-        raiseAlert(patientId, entry.id, AlertRules.checkBreathlessness(nyha))
+        raiseAlert(patientId, entry.id, AlertRules.checkBreathlessness(nyha), MonitoringSchedule.BREATHLESSNESS)
     }
 
     suspend fun logBleedingEvent(

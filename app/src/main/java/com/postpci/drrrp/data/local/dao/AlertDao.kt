@@ -38,6 +38,9 @@ interface AlertDao {
     @Query("UPDATE alert SET reviewed = 1, reviewedAt = :reviewedAt, reviewedByStaffId = :staffId, syncStatus = 'PENDING' WHERE id = :alertId")
     suspend fun markReviewed(alertId: String, reviewedAt: Long, staffId: String?)
 
+    @Query("UPDATE alert SET reviewed = 1, reviewedAt = :reviewedAt, syncStatus = 'PENDING' WHERE patientId = :patientId AND fieldKey = :fieldKey AND reviewed = 0")
+    suspend fun markReviewedForField(patientId: String, fieldKey: String, reviewedAt: Long)
+
     @Query("SELECT * FROM alert WHERE syncStatus != 'SYNCED'")
     suspend fun getPendingSync(): List<AlertEntity>
 

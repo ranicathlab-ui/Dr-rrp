@@ -58,6 +58,15 @@ class TodayViewModel(
         }
     }
 
+    private val _dismissedAlertIds = kotlinx.coroutines.flow.MutableStateFlow<Set<String>>(emptySet())
+
+    fun dismissAlertBanner(alertId: String) {
+        _dismissedAlertIds.value = _dismissedAlertIds.value + alertId
+        viewModelScope.launch {
+            repository.markAlertReviewed(alertId)
+        }
+    }
+
     // Emergency-tier alerts are handled one level up, by EmergencyGateViewModel in the shell —
     // that way a pending emergency interrupts every tab (Trends/Alerts/Profile too), not just
     // Today, and the full-screen escalation truly covers the whole screen (no bottom nav
@@ -67,11 +76,18 @@ class TodayViewModel(
         repository.observeTodayEntry(patientId),
         repository.observeUnreviewedAlerts(patientId),
         messagingRepository.observeUnreadCountForPatient(patientId),
-    ) { baseline, entry, alerts, unreadCount ->
+        _dismissedAlertIds,
+    ) { baseline, entry, alerts, unreadCount, dismissedIds ->
         val today = LocalDate.now()
         val pciDate = baseline?.procedural?.pciDate
         val dayN = pciDate?.let { MonitoringSchedule.daysPostPci(it, today) }
         val dueFields = pciDate?.let { MonitoringSchedule.dueFieldsFor(it, today) }.orEmpty()
+
+        val now = System.currentTimeMillis()
+        val twentyFourHoursAgo = now - 24 * 60 * 60 * 1000L
+        val activeAlerts = alerts
+            .filter { it.createdAt >= twentyFourHoursAgo }
+            .filter { !dismissedIds.contains(it.id) }
 
         TodayUiState(
             isLoading = false,
@@ -82,7 +98,7 @@ class TodayViewModel(
             dueFields = dueFields,
             todayEntry = entry,
             medications = baseline?.let(::medicationsFor).orEmpty(),
-            unreviewedAlerts = alerts,
+            unreviewedAlerts = activeAlerts,
             unreadMessageCount = unreadCount,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TodayUiState())
