@@ -121,6 +121,10 @@ data class MedicationsAndFollowUp(
     val opdFollowUpDate: LocalDate? = null,
     val echoFollowUpDate: LocalDate? = null,
     val lipidRecheckDate: LocalDate? = null,
+    val nextFollowUpDate: Long? = null,
+    val nextEchoDate: Long? = null,
+    val followUpStatus: String? = null, // "PENDING", "ATTENDED", "RESCHEDULED", "UNREACHABLE", "UNWELL", "OTHER"
+    val followUpReason: String? = null,
 )
 
 data class Social(

@@ -6,6 +6,7 @@ import com.postpci.drrrp.data.local.DrRrpDatabase
 import com.postpci.drrrp.data.local.entity.AlertEntity
 import com.postpci.drrrp.data.local.entity.PatientBaselineEntity
 import com.postpci.drrrp.data.model.AlertSeverity
+import com.postpci.drrrp.data.model.SyncStatus
 import com.postpci.drrrp.data.schedule.MonitoringSchedule
 import com.postpci.drrrp.data.sync.SyncApiService
 import com.postpci.drrrp.data.sync.SyncManager
@@ -36,6 +37,10 @@ data class PatientSummary(
     val hasMessages: Boolean = false,
     val hasUnreadMessages: Boolean = false,
     val unreadCount: Int = 0,
+    val nextFollowUpDate: Long? = null,
+    val nextEchoDate: Long? = null,
+    val followUpStatus: String? = null,
+    val followUpReason: String? = null,
 )
 
 enum class AlertStatusFilter { ALL, EMERGENCY, ROUTINE, MESSAGES, NONE }
@@ -99,6 +104,27 @@ class StaffDashboardViewModel(
         }
     }
 
+    fun updateFollowUpAttendance(patientId: String, attended: Boolean, nextFollowUp: Long?, nextEcho: Long?, reason: String?) {
+        viewModelScope.launch {
+            try {
+                val baseline = database.patientBaselineDao().get(patientId) ?: return@launch
+                val updatedMeds = baseline.medicationsAndFollowUp.copy(
+                    nextFollowUpDate = nextFollowUp,
+                    nextEchoDate = nextEcho,
+                    followUpStatus = if (attended) "ATTENDED" else "RESCHEDULED",
+                    followUpReason = reason,
+                )
+                val updatedBaseline = baseline.copy(
+                    medicationsAndFollowUp = updatedMeds,
+                    updatedAt = System.currentTimeMillis(),
+                    syncStatus = SyncStatus.PENDING,
+                )
+                database.patientBaselineDao().upsert(updatedBaseline)
+                refresh()
+            } catch (_: Exception) {}
+        }
+    }
+
     val uiState: StateFlow<StaffDashboardUiState> = combine(
         remotePatients,
         database.patientBaselineDao().observeAll(),
@@ -151,6 +177,7 @@ class StaffDashboardViewModel(
                 val dueFieldsToday = pciDate?.let { MonitoringSchedule.dueFieldsFor(it, today) }.orEmpty()
                 val daysSinceLastEntry = latestEntry?.entryDate?.let { ChronoUnit.DAYS.between(it, today) } ?: Long.MAX_VALUE
                 val alert = alertByPatient[baseline.patientId]
+                val meds = baseline.medicationsAndFollowUp
                 PatientSummary(
                     patientId = baseline.patientId,
                     name = baseline.demographics.name,
@@ -161,6 +188,10 @@ class StaffDashboardViewModel(
                     hasMissedEntry = dueFieldsToday.isNotEmpty() && daysSinceLastEntry >= 1,
                     hasMessages = baseline.patientId in messageIdsSet,
                     hasUnreadMessages = baseline.patientId in unreadIdsSet,
+                    nextFollowUpDate = meds.nextFollowUpDate,
+                    nextEchoDate = meds.nextEchoDate,
+                    followUpStatus = meds.followUpStatus,
+                    followUpReason = meds.followUpReason,
                 )
             }
         }
