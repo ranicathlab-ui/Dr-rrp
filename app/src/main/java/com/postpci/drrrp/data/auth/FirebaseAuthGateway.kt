@@ -192,8 +192,11 @@ class FirebaseAuthGateway(
         return InviteCredentials(response.patientId, response.email, response.temporaryPassword, emailSent = false)
     }
 
-    override suspend fun getIdToken(): String? =
+    override suspend fun getIdToken(): String? = try {
         auth.currentUser?.getIdToken(false)?.await()?.token
+    } catch (_: Exception) {
+        null
+    }
 
     private fun DocumentSnapshot.toAuthUser(uid: String, email: String): AuthUser? {
         val role = getString(FIELD_ROLE)?.let {
