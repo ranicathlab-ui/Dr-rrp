@@ -12,10 +12,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -86,24 +89,31 @@ fun StaffDashboardScreen(
     DrRrpScaffold(
         title = "Clinic Dashboard",
         actions = {
-            BadgedBox(
-                badge = {
-                    if (state.totalUnreadCount > 0) {
-                        Badge(
-                            containerColor = AlertRoseRed,
-                            contentColor = Color.White,
-                        ) {
-                            Text(if (state.totalUnreadCount > 99) "99+" else state.totalUnreadCount.toString())
-                        }
-                    }
-                },
-            ) {
+            Box(modifier = Modifier.padding(end = 4.dp), contentAlignment = Alignment.Center) {
                 IconButton(onClick = { viewModel.onFilterChange(AlertStatusFilter.MESSAGES) }) {
-                    Icon(Icons.Filled.Email, contentDescription = "Messages", tint = MaterialTheme.colorScheme.onSurface)
+                    Icon(Icons.Filled.Email, contentDescription = "Messages", tint = Color.White)
+                }
+                if (state.totalUnreadCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 8.dp, end = 8.dp)
+                            .size(18.dp)
+                            .background(AlertRoseRed, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = if (state.totalUnreadCount > 99) "99+" else state.totalUnreadCount.toString(),
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp,
+                        )
+                    }
                 }
             }
             TextButton(onClick = { scope.launch { application.authGateway.signOut() } }) {
-                Text("Sign out", color = MaterialTheme.colorScheme.onSurface)
+                Text("Sign out", color = Color.White)
             }
         },
     ) { modifier ->

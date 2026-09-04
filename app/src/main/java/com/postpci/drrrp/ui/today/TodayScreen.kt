@@ -17,14 +17,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
@@ -102,23 +106,30 @@ fun TodayScreen(
     DrRrpScaffold(
         title = "Today",
         actions = {
-            BadgedBox(
-                badge = {
-                    if (state.unreadMessageCount > 0) {
-                        Badge(
-                            containerColor = AlertRed,
-                            contentColor = Color.White,
-                        ) {
-                            Text(if (state.unreadMessageCount > 99) "99+" else state.unreadMessageCount.toString())
-                        }
-                    }
-                },
-            ) {
+            Box(modifier = Modifier.padding(end = 4.dp), contentAlignment = Alignment.Center) {
                 IconButton(onClick = onOpenMessages) {
-                    Icon(Icons.Filled.Email, contentDescription = "Messages", tint = MaterialTheme.colorScheme.onSurface)
+                    Icon(Icons.Filled.Email, contentDescription = "Messages", tint = TextPrimary)
+                }
+                if (state.unreadMessageCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 8.dp, end = 8.dp)
+                            .size(18.dp)
+                            .background(AlertRed, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = if (state.unreadMessageCount > 99) "99+" else state.unreadMessageCount.toString(),
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp,
+                        )
+                    }
                 }
             }
-            TextButton(onClick = onSignOut) { Text("Sign out", color = MaterialTheme.colorScheme.onSurface) }
+            TextButton(onClick = onSignOut) { Text("Sign out", color = TextPrimary) }
         },
     ) { modifier ->
         if (state.isLoading) {
